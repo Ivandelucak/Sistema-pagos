@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  nombre   String
+  email    String  @unique
+  password String
+  rol      Role
+  activo   Boolean @default(true)
+
+  clients  Client[]
+  credits  Credit[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+}
+
+model Client {
+  id        Int     @id @default(autoincrement())
+  nombre    String
+  telefono  String?
+  direccion String?
+  activo    Boolean @default(true)
+
+  vendedorId Int
+  vendedor   User @relation(fields: [vendedorId], references: [id]) 
+
+  credits Credit[]
+
+  createdAt DateTime @default(now())
+}
+
+model Credit {
+  id         Int @id @default(autoincrement())
+  clientId   Int
+  vendedorId Int
+
+  fechaInicio    DateTime
+  tipo           String
+  frecuenciaDias Int
+  cantidadCuotas Int @default(1)
+  valorCuota     Float
+
+  total       Float
+  montoPagado Float @default(0)
+  saldo       Float
+
+  estado String
+  activo Boolean @default(true)
+
+  proximoVencimiento  DateTime?
+  cuotasPagadas       Int      @default(0)
+  cuotasRestantes     Int      @default(0)
+
+  client   Client @relation(fields: [clientId], references: [id])
+  vendedor User   @relation(fields: [vendedorId], references: [id])
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id        Int      @id @default(autoincrement())
+  creditId  Int
+  monto     Float
+  fechaPago DateTime
+
+  registradoPor Int
+  user          User @relation(fields: [registradoPor], references: [id])
+
+  credit Credit @relation(fields: [creditId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  ADMIN
+  VENDEDOR
+}

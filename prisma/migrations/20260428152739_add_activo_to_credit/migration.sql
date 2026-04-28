@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `credit` ADD COLUMN `activo` BOOLEAN NOT NULL DEFAULT true;
