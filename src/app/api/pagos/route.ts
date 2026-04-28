@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { registerPayment } from "@/lib/payments";
+import { requireAdmin } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
+    await requireAdmin();
     const body = await req.json();
 
     const creditId = Number(body.creditId);

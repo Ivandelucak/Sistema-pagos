@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { recalculateCredit } from "@/lib/recalculate-credit";
+import { requireAdmin } from "@/lib/auth";
 
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
     const paymentId = Number(id);
 
@@ -43,6 +45,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    await requireAdmin();
     const { id } = await params;
     const paymentId = Number(id);
     const body = await req.json();

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
 type EstadoFiltro = "activas" | "inactivas" | "todas";
 
@@ -12,6 +13,7 @@ export default async function ClientePage({
 }) {
   const { clientId } = await params;
   const { estado } = await searchParams;
+  const user = await requireUser();
 
   const id = Number(clientId);
   const filtro: EstadoFiltro =
@@ -63,13 +65,14 @@ export default async function ClientePage({
 
             <p className="mt-1 text-slate-600">Detalle del cliente</p>
           </div>
-
-          <Link
-            href={`/clientes/${cliente.id}/nueva-cuenta`}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Nueva cuenta
-          </Link>
+          {user.rol === "ADMIN" && (
+            <Link
+              href={`/clientes/${cliente.id}/nueva-cuenta`}
+              className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Nueva cuenta
+            </Link>
+          )}
         </div>
 
         <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">

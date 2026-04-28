@@ -1,20 +1,21 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 
 export default async function ClientesPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
+  const user = await requireUser();
   const { q } = await searchParams;
-  const search = q?.trim() ?? "";
 
-  const vendedorDaniId = 2;
+  const search = q?.trim() ?? "";
 
   const clientes = await prisma.client.findMany({
     where: {
-      vendedorId: vendedorDaniId,
       activo: true,
+      ...(user.rol === "VENDEDOR" ? { vendedorId: user.id } : {}),
       ...(search
         ? {
             nombre: {
@@ -24,6 +25,7 @@ export default async function ClientesPage({
         : {}),
     },
     include: {
+      vendedor: true,
       credits: true,
     },
     orderBy: {
@@ -40,16 +42,23 @@ export default async function ClientesPage({
               Clientes
             </h1>
             <p className="mt-2 text-slate-600">
-              Listado de clientes asignados al cobrador.
+              {user.rol === "ADMIN"
+                ? "Listado general de clientes."
+                : "Listado de clientes asignados a tu usuario."}
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Sesión: {user.nombre} · {user.rol}
             </p>
           </div>
 
-          <Link
-            href="/clientes/nuevo"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Nuevo cliente
-          </Link>
+          {user.rol === "ADMIN" && (
+            <Link
+              href="/clientes/nuevo"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Nuevo cliente
+            </Link>
+          )}
         </div>
 
         <form className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -94,7 +103,9 @@ export default async function ClientesPage({
 
           <div className="mt-5 grid gap-3">
             {clientes.map((cliente) => {
-              const cuentasActivas = cliente.credits.filter((c) => c.saldo > 0);
+              const cuentasActivas = cliente.credits.filter(
+                (c) => c.activo && c.saldo > 0,
+              );
 
               const saldoPendiente = cuentasActivas.reduce(
                 (acc, c) => acc + c.saldo,
@@ -118,6 +129,12 @@ export default async function ClientesPage({
                         {cuentasActivas.length === 1 ? "" : "s"} activa
                         {cuentasActivas.length === 1 ? "" : "s"}
                       </p>
+
+                      {user.rol === "ADMIN" && (
+                        <p className="mt-1 text-sm text-slate-500">
+                          Vendedor: {cliente.vendedor.nombre}
+                        </p>
+                      )}
                     </div>
 
                     <div className="md:text-right">

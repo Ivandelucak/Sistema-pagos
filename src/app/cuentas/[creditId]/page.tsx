@@ -5,6 +5,7 @@ import DeletePaymentButton from "@/components/DeletePaymentButton";
 import EditPaymentButton from "@/components/EditPaymentButton";
 import CreditStatusButton from "@/components/CreditStatusButton";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
+import { requireUser } from "@/lib/auth";
 
 export default async function CuentaPage({
   params,
@@ -13,6 +14,7 @@ export default async function CuentaPage({
 }) {
   const { creditId } = await params;
   const id = Number(creditId);
+  const user = await requireUser();
 
   if (!Number.isInteger(id)) {
     return <StateMessage title="Cuenta inválida" />;
@@ -77,13 +79,18 @@ export default async function CuentaPage({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <RegistrarCobroButton
-              creditId={credito.id}
-              saldo={tracking.saldo}
-            />
-            <CreditStatusButton creditId={credito.id} activo={credito.activo} />
-          </div>
+          {user.rol === "ADMIN" && (
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <RegistrarCobroButton
+                creditId={credito.id}
+                saldo={tracking.saldo}
+              />
+              <CreditStatusButton
+                creditId={credito.id}
+                activo={credito.activo}
+              />
+            </div>
+          )}
           {!credito.activo && (
             <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-800">
               Esta cuenta está dada de baja. No aparecerá en los listados
@@ -163,9 +170,11 @@ export default async function CuentaPage({
                 <tr className="border-b border-slate-200 text-slate-600">
                   <th className="px-4 py-3 text-left font-semibold">Fecha</th>
                   <th className="px-4 py-3 text-left font-semibold">Monto</th>
-                  <th className="px-4 py-3 text-right font-semibold">
-                    Acciones
-                  </th>
+                  {user.rol === "ADMIN" && (
+                    <th className="px-4 py-3 text-right font-semibold">
+                      Acciones
+                    </th>
+                  )}
                 </tr>
               </thead>
 
@@ -178,15 +187,17 @@ export default async function CuentaPage({
                     <td className="px-4 py-3 font-semibold text-slate-950">
                       ${pago.monto.toLocaleString("es-AR")}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-3">
-                        <EditPaymentButton
-                          paymentId={pago.id}
-                          currentAmount={pago.monto}
-                        />
-                        <DeletePaymentButton paymentId={pago.id} />
-                      </div>
-                    </td>
+                    {user.rol === "ADMIN" && (
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-3">
+                          <EditPaymentButton
+                            paymentId={pago.id}
+                            currentAmount={pago.monto}
+                          />
+                          <DeletePaymentButton paymentId={pago.id} />
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

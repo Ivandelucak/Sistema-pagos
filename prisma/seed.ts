@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaMariaDb({
   host: "localhost",
@@ -8,9 +9,131 @@ const adapter = new PrismaMariaDb({
   user: "root",
   password: "26Mar2004",
   database: "sistema_pagos",
+  allowPublicKeyRetrieval: true,
 });
 
 const prisma = new PrismaClient({ adapter });
+
+async function main() {
+  const adminPassword = await bcrypt.hash("admin123", 10);
+  const daniPassword = await bcrypt.hash("dani123", 10);
+
+  const ivanAdmin = await prisma.user.upsert({
+    where: { email: "ivan.admin@sistema.local" },
+    update: {
+      password: adminPassword,
+      rol: "ADMIN",
+      activo: true,
+    },
+    create: {
+      nombre: "Ivan Admin",
+      email: "ivan.admin@sistema.local",
+      password: adminPassword,
+      rol: "ADMIN",
+      activo: true,
+    },
+  });
+
+  const daniAdmin = await prisma.user.upsert({
+    where: { email: "dani.admin@sistema.local" },
+    update: {
+      password: adminPassword,
+      rol: "ADMIN",
+      activo: true,
+    },
+    create: {
+      nombre: "Dani Admin",
+      email: "dani.admin@sistema.local",
+      password: adminPassword,
+      rol: "ADMIN",
+      activo: true,
+    },
+  });
+
+  const dani = await prisma.user.upsert({
+    where: { email: "dani.cobrador@sistema.local" },
+    update: {
+      nombre: "Dani",
+      password: daniPassword,
+      rol: "VENDEDOR",
+      activo: true,
+    },
+    create: {
+      nombre: "Dani",
+      email: "dani.cobrador@sistema.local",
+      password: daniPassword,
+      rol: "VENDEDOR",
+      activo: true,
+    },
+  });
+
+  await prisma.payment.deleteMany({
+    where: {
+      credit: {
+        vendedorId: dani.id,
+      },
+    },
+  });
+
+  await prisma.credit.deleteMany({
+    where: {
+      vendedorId: dani.id,
+    },
+  });
+
+  await prisma.client.deleteMany({
+    where: {
+      vendedorId: dani.id,
+    },
+  });
+
+  for (const item of clientesDani) {
+    const client = await prisma.client.create({
+      data: {
+        nombre: item.cliente,
+        vendedorId: dani.id,
+      },
+    });
+
+    const credit = await prisma.credit.create({
+      data: {
+        clientId: client.id,
+        vendedorId: dani.id,
+        fechaInicio: excelDateToJSDate(item.fecha),
+        tipo: item.tipo,
+        frecuenciaDias: item.frecuencia,
+        cantidadCuotas:
+          item.valorCuota > 0 ? Math.ceil(item.total / item.valorCuota) : 1,
+        valorCuota: item.valorCuota,
+        total: item.total,
+        montoPagado: item.pago,
+        saldo: item.saldo,
+        proximoVencimiento: item.proximoVencimiento
+          ? excelDateToJSDate(item.proximoVencimiento)
+          : null,
+        cuotasPagadas: item.cuotasPagadas,
+        cuotasRestantes: item.cuotasRestantes,
+        estado: item.estado,
+        activo: true,
+      },
+    });
+
+    if (item.pago > 0) {
+      await prisma.payment.create({
+        data: {
+          creditId: credit.id,
+          monto: item.pago,
+          fechaPago: excelDateToJSDate(item.fecha),
+          registradoPor: ivanAdmin.id,
+        },
+      });
+    }
+  }
+
+  console.log(
+    `Seed finalizado: ${clientesDani.length} clientes de Dani importados.`,
+  );
+}
 
 const clientesDani = [
   {
@@ -1012,100 +1135,12 @@ const clientesDani = [
 function excelDateToJSDate(serial: number): Date {
   return new Date(Date.UTC(1899, 11, 30) + serial * 24 * 60 * 60 * 1000);
 }
-
-async function main() {
-  const admin = await prisma.user.upsert({
-    where: { email: "admin@sistema.local" },
-    update: {},
-    create: {
-      nombre: "Administrador",
-      email: "admin@sistema.local",
-      password: "admin123",
-      rol: "ADMIN",
-    },
-  });
-
-  const dani = await prisma.user.upsert({
-    where: { email: "dani@sistema.local" },
-    update: {},
-    create: {
-      nombre: "Dani",
-      email: "dani@sistema.local",
-      password: "dani123",
-      rol: "VENDEDOR",
-    },
-  });
-
-  await prisma.payment.deleteMany({
-    where: {
-      credit: {
-        vendedorId: dani.id,
-      },
-    },
-  });
-
-  await prisma.credit.deleteMany({
-    where: {
-      vendedorId: dani.id,
-    },
-  });
-
-  await prisma.client.deleteMany({
-    where: {
-      vendedorId: dani.id,
-    },
-  });
-
-  for (const item of clientesDani) {
-    const client = await prisma.client.create({
-      data: {
-        nombre: item.cliente,
-        vendedorId: dani.id,
-      },
-    });
-
-    const credit = await prisma.credit.create({
-      data: {
-        clientId: client.id,
-        vendedorId: dani.id,
-        fechaInicio: excelDateToJSDate(item.fecha),
-        tipo: item.tipo,
-        frecuenciaDias: item.frecuencia,
-        valorCuota: item.valorCuota,
-        total: item.total,
-        montoPagado: item.pago,
-        saldo: item.saldo,
-        proximoVencimiento: item.proximoVencimiento
-          ? excelDateToJSDate(item.proximoVencimiento)
-          : null,
-        cuotasPagadas: item.cuotasPagadas,
-        cuotasRestantes: item.cuotasRestantes,
-        estado: item.estado,
-      },
-    });
-
-    if (item.pago > 0) {
-      await prisma.payment.create({
-        data: {
-          creditId: credit.id,
-          monto: item.pago,
-          fechaPago: excelDateToJSDate(item.fecha),
-          registradoPor: admin.id,
-        },
-      });
-    }
-  }
-
-  console.log(
-    `Seed finalizado: ${clientesDani.length} clientes de Dani importados.`,
-  );
-}
-
 main()
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
+  .then(async () => {
     await prisma.$disconnect();
+  })
+  .catch(async (error) => {
+    console.error(error);
+    await prisma.$disconnect();
+    process.exit(1);
   });

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 
 export default async function Home({
@@ -10,16 +12,19 @@ export default async function Home({
     order?: "asc" | "desc";
   }>;
 }) {
+  const user = await requireUser();
+
+  if (user.rol === "VENDEDOR") {
+    redirect("/hoy");
+  }
+
   const { q, order } = await searchParams;
 
   const search = q?.trim() ?? "";
   const sort = order === "desc" ? "desc" : "asc";
 
-  const vendedorDaniId = 2;
-
   const creditos = await prisma.credit.findMany({
     where: {
-      vendedorId: vendedorDaniId,
       activo: true,
       saldo: { gt: 0 },
       ...(search
@@ -34,6 +39,7 @@ export default async function Home({
     },
     include: {
       client: true,
+      vendedor: true,
     },
   });
 
@@ -64,21 +70,24 @@ export default async function Home({
           <div>
             <h1 className="text-3xl font-bold text-slate-950">Inicio</h1>
             <p className="mt-2 text-slate-600">
-              Cuentas pendientes ordenadas por vencimiento.
+              Panel administrativo de cuentas pendientes.
+            </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Sesión: {user.nombre} · {user.rol}
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Link
               href="/clientes/nuevo"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
             >
               Nuevo cliente
             </Link>
 
             <Link
               href="/clientes"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
               Clientes
             </Link>
@@ -140,12 +149,19 @@ export default async function Home({
                   href={`/cuentas/${c.id}`}
                   className="block rounded-xl border border-slate-200 bg-white p-4 hover:bg-slate-50"
                 >
-                  <div className="grid gap-3 md:grid-cols-4 md:items-center">
+                  <div className="grid gap-3 md:grid-cols-5 md:items-center">
                     <div>
                       <p className="font-semibold text-slate-950">
                         {c.client.nombre}
                       </p>
                       <p className="text-sm text-slate-500">{c.tipo}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm text-slate-500">Vendedor</p>
+                      <p className="font-semibold text-slate-900">
+                        {c.vendedor.nombre}
+                      </p>
                     </div>
 
                     <div>
