@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { calculateCreditTracking } from "@/lib/credit-calculations";
 import { requireAdmin } from "@/lib/auth";
+import { calculateCreditTracking } from "@/lib/credit-calculations";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
     await requireAdmin();
+
     const body = await req.json();
 
     const clientId = Number(body.clientId);
@@ -29,6 +30,32 @@ export async function POST(req: Request) {
       cantidadCuotas <= 0
     ) {
       return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+    }
+
+    const cliente = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: {
+        id: true,
+        vendedorId: true,
+        activo: true,
+      },
+    });
+
+    if (!cliente || !cliente.activo) {
+      return NextResponse.json(
+        { error: "Cliente inválido o dado de baja" },
+        { status: 400 },
+      );
+    }
+
+    if (cliente.vendedorId !== vendedorId) {
+      return NextResponse.json(
+        {
+          error:
+            "El vendedor de la cuenta debe coincidir con el vendedor asignado al cliente",
+        },
+        { status: 400 },
+      );
     }
 
     const valorCuota = total / cantidadCuotas;
@@ -57,12 +84,15 @@ export async function POST(req: Request) {
         cuotasRestantes: cantidadCuotas,
         proximoVencimiento: tracking.proximoVencimiento,
         estado: tracking.estado,
+        activo: true,
       },
     });
 
     return NextResponse.json({ ok: true, creditId: credit.id });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Error al crear cuenta";
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Error al crear cuenta";
+
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

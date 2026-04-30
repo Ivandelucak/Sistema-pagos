@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import RegistrarCobroButton from "@/components/RegistrarCobroButton";
-import DeletePaymentButton from "@/components/DeletePaymentButton";
-import EditPaymentButton from "@/components/EditPaymentButton";
-import CreditStatusButton from "@/components/CreditStatusButton";
-import { calculateCreditTracking } from "@/lib/credit-calculations";
 import { requireUser } from "@/lib/auth";
+import { calculateCreditTracking } from "@/lib/credit-calculations";
+import RegistrarCobroButton from "@/components/RegistrarCobroButton";
+import CreditStatusButton from "@/components/CreditStatusButton";
+import EditPaymentButton from "@/components/EditPaymentButton";
+import DeletePaymentButton from "@/components/DeletePaymentButton";
+import BackButton from "@/components/BackButton";
 
 export default async function CuentaPage({
   params,
 }: {
   params: Promise<{ creditId: string }>;
 }) {
+  const user = await requireUser();
+
   const { creditId } = await params;
   const id = Number(creditId);
-  const user = await requireUser();
 
   if (!Number.isInteger(id)) {
     return <StateMessage title="Cuenta inválida" />;
@@ -44,82 +46,125 @@ export default async function CuentaPage({
     montoPagado: credito.montoPagado,
   });
 
-  const isPaid = tracking.saldo <= 0;
+  const progreso =
+    credito.total > 0 ? (credito.montoPagado / credito.total) * 100 : 0;
+
+  const progresoSeguro = Math.min(Math.max(progreso, 0), 100);
+  const isAdmin = user.rol === "ADMIN";
+
+  const paymentCuotaMap = new Map<number, number>();
+
+  let acumulado = 0;
+
+  const pagosOrdenCronologico = [...credito.payments].sort(
+    (a, b) => a.fechaPago.getTime() - b.fechaPago.getTime(),
+  );
+
+  for (const pago of pagosOrdenCronologico) {
+    acumulado += pago.monto;
+
+    const cuotaNumero =
+      credito.valorCuota > 0 ? Math.ceil(acumulado / credito.valorCuota) : 1;
+
+    paymentCuotaMap.set(
+      pago.id,
+      Math.min(Math.max(cuotaNumero, 1), credito.cantidadCuotas),
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
       <section className="mx-auto max-w-5xl space-y-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <Link
-              href={`/clientes/${credito.client.id}`}
-              className="text-sm font-medium text-slate-500 hover:text-slate-900"
-            >
-              ← Volver al cliente
-            </Link>
+        <div>
+          <BackButton />
 
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+          <div className="mt-3 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-slate-950">
               {credito.client.nombre}
             </h1>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Badge
-                label={isPaid ? "PAGADO" : tracking.estado}
-                variant={
-                  isPaid
-                    ? "success"
-                    : tracking.estado === "VENCIDO"
-                      ? "danger"
-                      : "default"
-                }
-              />
-              <span className="text-sm text-slate-500">
-                Cuenta #{credito.id}
-              </span>
-            </div>
+            <StatusBadge dias={tracking.diasParaVencer} />
           </div>
 
-          {user.rol === "ADMIN" && (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <RegistrarCobroButton
-                creditId={credito.id}
-                saldo={tracking.saldo}
-              />
-              <CreditStatusButton
-                creditId={credito.id}
-                activo={credito.activo}
-              />
-            </div>
-          )}
-          {!credito.activo && (
-            <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-800">
-              Esta cuenta está dada de baja. No aparecerá en los listados
-              operativos.
-            </div>
-          )}
+          <p className="text-slate-600">Detalle de cuenta</p>
+        </div>
+
+        {!credito.activo && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+            Esta cuenta está dada de baja. No aparecerá en los listados
+            operativos.
+          </div>
+        )}
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <p className="text-sm font-medium text-slate-500">Próxima acción</p>
+
+          <div className="mt-2 space-y-1">
+            {tracking.diasParaVencer < 0 ? (
+              <p className="text-red-600 font-semibold">
+                Cuenta vencida hace {Math.abs(tracking.diasParaVencer)} día
+                {Math.abs(tracking.diasParaVencer) === 1 ? "" : "s"}. Saldo
+                pendiente: ${tracking.saldo.toLocaleString("es-AR")}
+              </p>
+            ) : tracking.diasParaVencer === 0 ? (
+              <p className="text-amber-600 font-semibold">
+                Vence hoy. Cobrar ${credito.valorCuota.toLocaleString("es-AR")}
+              </p>
+            ) : (
+              <p className="text-slate-700 font-semibold">
+                Próximo cobro en {tracking.diasParaVencer} día
+                {tracking.diasParaVencer === 1 ? "" : "s"} (
+                {tracking.proximoVencimiento.toLocaleDateString("es-AR")})
+              </p>
+            )}
+
+            {/* NUEVO BLOQUE */}
+            {!tracking.cuotaActualCompleta && (
+              <p className="text-sm text-red-600 font-medium">
+                ⚠ Cuota incompleta: faltan $
+                {(credito.valorCuota - tracking.restoPendiente).toLocaleString(
+                  "es-AR",
+                )}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
           <Card title="Total" value={credito.total} />
           <Card title="Pagado" value={credito.montoPagado} />
-          <Card title="Saldo" value={tracking.saldo} highlight={!isPaid} />
+          <Card title="Saldo" value={tracking.saldo} highlight />
           <Card title="Cuota" value={credito.valorCuota} />
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                Datos de la cuenta
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Información operativa calculada a partir de fecha, frecuencia,
-                total y pagos registrados.
-              </p>
+          <p className="text-sm font-medium text-slate-500">
+            Progreso del crédito
+          </p>
+
+          <div className="mt-4">
+            <div className="flex justify-between text-sm text-slate-700">
+              <span>
+                {tracking.cuotasPagadas} / {credito.cantidadCuotas} cuotas
+              </span>
+              <span>{Math.round(progresoSeguro)}%</span>
+            </div>
+
+            <div className="mt-2 h-2 w-full rounded bg-slate-200">
+              <div
+                className="h-2 rounded bg-slate-900"
+                style={{ width: `${progresoSeguro}%` }}
+              />
             </div>
           </div>
+        </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 className="text-lg font-semibold text-slate-950">
+            Datos de la cuenta
+          </h2>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
             <Info
               label="Fecha inicial"
               value={credito.fechaInicio.toLocaleDateString("es-AR")}
@@ -135,7 +180,7 @@ export default async function CuentaPage({
               value={String(tracking.diasParaVencer)}
               danger={tracking.diasParaVencer < 0}
             />
-            <Info label="Estado" value={isPaid ? "PAGADO" : tracking.estado} />
+            <Info label="Estado" value={tracking.estado} />
             <Info
               label="Cuotas pagadas"
               value={String(tracking.cuotasPagadas)}
@@ -147,8 +192,18 @@ export default async function CuentaPage({
           </div>
         </div>
 
+        {isAdmin && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <RegistrarCobroButton
+              creditId={credito.id}
+              saldo={tracking.saldo}
+            />
+            <CreditStatusButton creditId={credito.id} activo={credito.activo} />
+          </div>
+        )}
+
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
                 Movimientos
@@ -164,47 +219,47 @@ export default async function CuentaPage({
             </span>
           </div>
 
-          <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr className="border-b border-slate-200 text-slate-600">
-                  <th className="px-4 py-3 text-left font-semibold">Fecha</th>
-                  <th className="px-4 py-3 text-left font-semibold">Monto</th>
-                  {user.rol === "ADMIN" && (
-                    <th className="px-4 py-3 text-right font-semibold">
-                      Acciones
-                    </th>
-                  )}
-                </tr>
-              </thead>
+          <div className="mt-6 space-y-4">
+            {credito.payments.map((pago) => (
+              <div key={pago.id} className="relative pl-6">
+                <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-slate-900" />
+                <div className="absolute -bottom-4 left-1.25 top-5 w-px bg-slate-200" />
 
-              <tbody className="divide-y divide-slate-200">
-                {credito.payments.map((pago) => (
-                  <tr key={pago.id} className="bg-white hover:bg-slate-50">
-                    <td className="px-4 py-3 text-slate-700">
-                      {pago.fechaPago.toLocaleDateString("es-AR")}
-                    </td>
-                    <td className="px-4 py-3 font-semibold text-slate-950">
-                      ${pago.monto.toLocaleString("es-AR")}
-                    </td>
-                    {user.rol === "ADMIN" && (
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-3">
-                          <EditPaymentButton
-                            paymentId={pago.id}
-                            currentAmount={pago.monto}
-                          />
-                          <DeletePaymentButton paymentId={pago.id} />
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-950">
+                        Cobro registrado · Cuota {paymentCuotaMap.get(pago.id)}/
+                        {credito.cantidadCuotas}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {pago.fechaPago.toLocaleDateString("es-AR")}
+                      </p>
+                    </div>
+
+                    <div className="sm:text-right">
+                      <p className="text-sm text-slate-500">Monto</p>
+                      <p className="text-lg font-bold text-slate-950">
+                        ${pago.monto.toLocaleString("es-AR")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="mt-4 flex gap-3 border-t border-slate-200 pt-3">
+                      <EditPaymentButton
+                        paymentId={pago.id}
+                        currentAmount={pago.monto}
+                      />
+                      <DeletePaymentButton paymentId={pago.id} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
 
             {credito.payments.length === 0 && (
-              <div className="bg-white px-4 py-8 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
                 Sin movimientos registrados.
               </div>
             )}
@@ -261,28 +316,6 @@ function Info({
   );
 }
 
-function Badge({
-  label,
-  variant = "default",
-}: {
-  label: string;
-  variant?: "default" | "danger" | "success";
-}) {
-  const styles = {
-    default: "bg-slate-200 text-slate-800",
-    danger: "bg-red-100 text-red-700",
-    success: "bg-green-100 text-green-700",
-  };
-
-  return (
-    <span
-      className={`rounded-full px-3 py-1 text-xs font-bold ${styles[variant]}`}
-    >
-      {label}
-    </span>
-  );
-}
-
 function StateMessage({ title }: { title: string }) {
   return (
     <main className="min-h-screen bg-slate-100 p-8">
@@ -290,5 +323,29 @@ function StateMessage({ title }: { title: string }) {
         {title}
       </div>
     </main>
+  );
+}
+
+function StatusBadge({ dias }: { dias: number }) {
+  if (dias < 0) {
+    return (
+      <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+        VENCIDO
+      </span>
+    );
+  }
+
+  if (dias === 0) {
+    return (
+      <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
+        VENCE HOY
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+      AL DÍA
+    </span>
   );
 }

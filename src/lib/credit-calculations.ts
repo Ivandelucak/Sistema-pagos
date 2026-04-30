@@ -20,6 +20,12 @@ export function calculateCreditTracking({
 
   const cuotasRestantes = valorCuota > 0 ? Math.ceil(saldo / valorCuota) : 0;
 
+  const restoPendiente = valorCuota > 0 ? montoPagado % valorCuota : 0;
+
+  const cuotaActualCompleta = restoPendiente === 0;
+
+  const cuotasCompletas = cuotasPagadas;
+
   const proximoVencimiento = new Date(fechaInicio);
   proximoVencimiento.setDate(
     proximoVencimiento.getDate() + cuotasPagadas * frecuenciaDias,
@@ -45,5 +51,8 @@ export function calculateCreditTracking({
     proximoVencimiento,
     diasParaVencer,
     estado,
+    cuotasCompletas,
+    restoPendiente,
+    cuotaActualCompleta,
   };
 }
