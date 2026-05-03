@@ -38,10 +38,10 @@ export default function CreditStatusButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className={`rounded-lg px-4 py-2 text-sm font-medium ${
+        className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] ${
           activo
-            ? "border border-red-300 bg-white text-red-600 hover:bg-red-50"
-            : "bg-green-600 text-white hover:bg-green-700"
+            ? "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50"
+            : "border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50"
         }`}
       >
         {activo ? "Dar de baja cuenta" : "Reactivar cuenta"}

@@ -25,7 +25,12 @@ export default async function CuentaPage({
   const credito = await prisma.credit.findUnique({
     where: { id },
     include: {
-      client: true,
+      client: {
+        include: {
+          vendedor: true,
+        },
+      },
+      vendedor: true,
       payments: {
         orderBy: {
           fechaPago: "desc",
@@ -36,6 +41,10 @@ export default async function CuentaPage({
 
   if (!credito) {
     return <StateMessage title="Cuenta no encontrada" />;
+  }
+
+  if (user.rol === "VENDEDOR" && credito.vendedorId !== user.id) {
+    return <StateMessage title="No tenés permiso para ver esta cuenta" />;
   }
 
   const tracking = calculateCreditTracking({
@@ -51,6 +60,9 @@ export default async function CuentaPage({
 
   const progresoSeguro = Math.min(Math.max(progreso, 0), 100);
   const isAdmin = user.rol === "ADMIN";
+  const cuentaPagada = tracking.saldo <= 0;
+  const cuentaVencida = tracking.diasParaVencer < 0 && !cuentaPagada;
+  const venceHoy = tracking.diasParaVencer === 0 && !cuentaPagada;
 
   const paymentCuotaMap = new Map<number, number>();
 
@@ -74,53 +86,83 @@ export default async function CuentaPage({
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
-      <section className="mx-auto max-w-5xl space-y-6">
-        <div>
+      <section className="mx-auto max-w-6xl space-y-6">
+        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <BackButton />
 
-          <div className="mt-3 flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-950">
-              {credito.client.nombre}
-            </h1>
+          <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                  {credito.client.nombre}
+                </h1>
 
-            <StatusBadge dias={tracking.diasParaVencer} />
+                <StatusBadge
+                  saldo={tracking.saldo}
+                  dias={tracking.diasParaVencer}
+                  activo={credito.activo}
+                />
+              </div>
+
+              <p className="mt-2 text-slate-600">Detalle de cuenta</p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Badge label={`Cuenta #${credito.id}`} />
+                <Badge label={`Vendedor: ${credito.vendedor.nombre}`} />
+                <Badge label={`Tipo: ${credito.tipo}`} />
+              </div>
+            </div>
+
+            <Link
+              href={`/clientes/${credito.client.id}`}
+              className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-sm active:scale-[0.98]"
+            >
+              Ver ficha del cliente
+            </Link>
           </div>
-
-          <p className="text-slate-600">Detalle de cuenta</p>
         </div>
 
         {!credito.activo && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm font-medium text-amber-800">
+          <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4 text-sm font-medium text-slate-700">
             Esta cuenta está dada de baja. No aparecerá en los listados
-            operativos.
+            operativos. Su historial permanece conservado.
           </div>
         )}
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div
+          className={`rounded-2xl border bg-white p-5 shadow-sm ring-1 ${
+            cuentaVencida
+              ? "border-red-200 ring-red-100"
+              : "border-slate-200 ring-slate-200"
+          }`}
+        >
           <p className="text-sm font-medium text-slate-500">Próxima acción</p>
 
           <div className="mt-2 space-y-1">
-            {tracking.diasParaVencer < 0 ? (
-              <p className="text-red-600 font-semibold">
+            {cuentaPagada ? (
+              <p className="font-semibold text-slate-800">
+                Cuenta pagada. No quedan cobros pendientes.
+              </p>
+            ) : cuentaVencida ? (
+              <p className="font-semibold text-red-600">
                 Cuenta vencida hace {Math.abs(tracking.diasParaVencer)} día
                 {Math.abs(tracking.diasParaVencer) === 1 ? "" : "s"}. Saldo
                 pendiente: ${tracking.saldo.toLocaleString("es-AR")}
               </p>
-            ) : tracking.diasParaVencer === 0 ? (
-              <p className="text-amber-600 font-semibold">
+            ) : venceHoy ? (
+              <p className="font-semibold text-slate-800">
                 Vence hoy. Cobrar ${credito.valorCuota.toLocaleString("es-AR")}
               </p>
             ) : (
-              <p className="text-slate-700 font-semibold">
+              <p className="font-semibold text-slate-700">
                 Próximo cobro en {tracking.diasParaVencer} día
                 {tracking.diasParaVencer === 1 ? "" : "s"} (
                 {tracking.proximoVencimiento.toLocaleDateString("es-AR")})
               </p>
             )}
 
-            {/* NUEVO BLOQUE */}
-            {!tracking.cuotaActualCompleta && (
-              <p className="text-sm text-red-600 font-medium">
+            {tracking.saldo > 0 && !tracking.cuotaActualCompleta && (
+              <p className="text-sm font-medium text-red-600">
                 ⚠ Cuota incompleta: faltan $
                 {(credito.valorCuota - tracking.restoPendiente).toLocaleString(
                   "es-AR",
@@ -131,56 +173,86 @@ export default async function CuentaPage({
         </div>
 
         <div className="grid gap-4 md:grid-cols-4">
-          <Card title="Total" value={credito.total} />
-          <Card title="Pagado" value={credito.montoPagado} />
-          <Card title="Saldo" value={tracking.saldo} highlight />
-          <Card title="Cuota" value={credito.valorCuota} />
+          <MetricCard title="Total" value={formatMoney(credito.total)} />
+          <MetricCard title="Pagado" value={formatMoney(credito.montoPagado)} />
+          <MetricCard
+            title="Saldo"
+            value={formatMoney(tracking.saldo)}
+            highlight={tracking.saldo > 0}
+          />
+          <MetricCard
+            title="Valor cuota"
+            value={formatMoney(credito.valorCuota)}
+          />
         </div>
 
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm font-medium text-slate-500">
-            Progreso del crédito
-          </p>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                Progreso del crédito
+              </h2>
+              <p className="text-sm text-slate-500">
+                Avance calculado según el total de la cuenta y los cobros
+                registrados.
+              </p>
+            </div>
 
-          <div className="mt-4">
+            <span className="text-sm font-semibold text-slate-700">
+              {Math.round(progresoSeguro)}%
+            </span>
+          </div>
+
+          <div className="mt-5">
             <div className="flex justify-between text-sm text-slate-700">
               <span>
                 {tracking.cuotasPagadas} / {credito.cantidadCuotas} cuotas
+                completas
               </span>
-              <span>{Math.round(progresoSeguro)}%</span>
+              <span>
+                Restan {tracking.cuotasRestantes} cuota
+                {tracking.cuotasRestantes === 1 ? "" : "s"}
+              </span>
             </div>
 
-            <div className="mt-2 h-2 w-full rounded bg-slate-200">
+            <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200">
               <div
-                className="h-2 rounded bg-slate-900"
+                className="h-3 rounded-full bg-slate-900 transition-all"
                 style={{ width: `${progresoSeguro}%` }}
               />
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-lg font-semibold text-slate-950">
-            Datos de la cuenta
+            Datos completos de la cuenta
           </h2>
 
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <p className="mt-1 text-sm text-slate-500">
+            Información equivalente a los datos operativos del Excel, calculada
+            y actualizada desde el sistema.
+          </p>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <Info label="Cliente" value={credito.client.nombre} />
+            <Info label="Vendedor" value={credito.vendedor.nombre} />
+            <Info label="Tipo" value={credito.tipo} />
+
             <Info
               label="Fecha inicial"
               value={credito.fechaInicio.toLocaleDateString("es-AR")}
             />
-            <Info label="Tipo" value={credito.tipo} />
-            <Info label="Frecuencia" value={`${credito.frecuenciaDias} días`} />
             <Info
               label="Próximo vencimiento"
               value={tracking.proximoVencimiento.toLocaleDateString("es-AR")}
             />
+            <Info label="Frecuencia" value={`${credito.frecuenciaDias} días`} />
+
             <Info
-              label="DPV / Días para vencer"
-              value={String(tracking.diasParaVencer)}
-              danger={tracking.diasParaVencer < 0}
+              label="Cantidad de cuotas"
+              value={String(credito.cantidadCuotas)}
             />
-            <Info label="Estado" value={tracking.estado} />
             <Info
               label="Cuotas pagadas"
               value={String(tracking.cuotasPagadas)}
@@ -189,21 +261,69 @@ export default async function CuentaPage({
               label="Cuotas restantes"
               value={String(tracking.cuotasRestantes)}
             />
+
+            <Info label="Total" value={formatMoney(credito.total)} />
+            <Info
+              label="Monto pagado"
+              value={formatMoney(credito.montoPagado)}
+            />
+            <Info label="Saldo" value={formatMoney(tracking.saldo)} />
+
+            <Info label="Valor cuota" value={formatMoney(credito.valorCuota)} />
+            <Info
+              label="DPV / Días para vencer"
+              value={String(tracking.diasParaVencer)}
+              danger={tracking.diasParaVencer < 0 && tracking.saldo > 0}
+            />
+            <Info label="Estado" value={tracking.estado} />
+
+            <Info
+              label="Estado operativo"
+              value={credito.activo ? "Activa" : "Dada de baja"}
+            />
+            <Info
+              label="Fecha de alta"
+              value={credito.createdAt.toLocaleDateString("es-AR")}
+            />
+            <Info
+              label="Fecha de carga"
+              value={credito.createdAt.toLocaleDateString("es-AR")}
+            />
           </div>
-        </div>
+        </section>
 
         {isAdmin && (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <RegistrarCobroButton
-              creditId={credito.id}
-              saldo={tracking.saldo}
-            />
-            <CreditStatusButton creditId={credito.id} activo={credito.activo} />
-          </div>
+          <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Acciones administrativas
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Registrá cobros o modificá el estado operativo de esta cuenta.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {credito.activo && !cuentaPagada && (
+                  <RegistrarCobroButton
+                    creditId={credito.id}
+                    saldo={tracking.saldo}
+                  />
+                )}
+
+                <CreditStatusButton
+                  creditId={credito.id}
+                  activo={credito.activo}
+                />
+              </div>
+            </div>
+          </section>
         )}
 
-        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center justify-between">
+        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
                 Movimientos
@@ -220,43 +340,52 @@ export default async function CuentaPage({
           </div>
 
           <div className="mt-6 space-y-4">
-            {credito.payments.map((pago) => (
-              <div key={pago.id} className="relative pl-6">
-                <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-slate-900" />
-                <div className="absolute -bottom-4 left-1.25 top-5 w-px bg-slate-200" />
+            {credito.payments.map((pago, index) => {
+              const cuotaNumero = paymentCuotaMap.get(pago.id) ?? 1;
+              const isLast = index === credito.payments.length - 1;
 
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-950">
-                        Cobro registrado · Cuota {paymentCuotaMap.get(pago.id)}/
-                        {credito.cantidadCuotas}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {pago.fechaPago.toLocaleDateString("es-AR")}
-                      </p>
-                    </div>
+              return (
+                <div key={pago.id} className="relative pl-6">
+                  <div className="absolute left-0 top-1.5 h-3 w-3 rounded-full bg-slate-900" />
 
-                    <div className="sm:text-right">
-                      <p className="text-sm text-slate-500">Monto</p>
-                      <p className="text-lg font-bold text-slate-950">
-                        ${pago.monto.toLocaleString("es-AR")}
-                      </p>
-                    </div>
-                  </div>
-
-                  {isAdmin && (
-                    <div className="mt-4 flex gap-3 border-t border-slate-200 pt-3">
-                      <EditPaymentButton
-                        paymentId={pago.id}
-                        currentAmount={pago.monto}
-                      />
-                      <DeletePaymentButton paymentId={pago.id} />
-                    </div>
+                  {!isLast && (
+                    <div className="absolute -bottom-4 left-1.5 top-5 w-px bg-slate-200" />
                   )}
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-semibold text-slate-950">
+                          Cobro registrado · Cuota {cuotaNumero}/
+                          {credito.cantidadCuotas}
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          {pago.fechaPago.toLocaleDateString("es-AR")}
+                        </p>
+                      </div>
+
+                      <div className="sm:text-right">
+                        <p className="text-sm text-slate-500">Monto</p>
+                        <p className="text-lg font-bold text-slate-950">
+                          {formatMoney(pago.monto)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {isAdmin && (
+                      <div className="mt-4 flex gap-3 border-t border-slate-200 pt-3">
+                        <EditPaymentButton
+                          paymentId={pago.id}
+                          currentAmount={pago.monto}
+                        />
+                        <DeletePaymentButton paymentId={pago.id} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {credito.payments.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
@@ -264,19 +393,23 @@ export default async function CuentaPage({
               </div>
             )}
           </div>
-        </div>
+        </section>
       </section>
     </main>
   );
 }
 
-function Card({
+function formatMoney(value: number) {
+  return `$${value.toLocaleString("es-AR")}`;
+}
+
+function MetricCard({
   title,
   value,
   highlight,
 }: {
   title: string;
-  value: number;
+  value: string;
   highlight?: boolean;
 }) {
   return (
@@ -287,7 +420,7 @@ function Card({
           highlight ? "text-red-600" : "text-slate-950"
         }`}
       >
-        ${value.toLocaleString("es-AR")}
+        {value}
       </p>
     </div>
   );
@@ -303,7 +436,7 @@ function Info({
   danger?: boolean;
 }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-4">
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p
         className={`mt-1 font-semibold ${
@@ -316,36 +449,68 @@ function Info({
   );
 }
 
-function StateMessage({ title }: { title: string }) {
-  return (
-    <main className="min-h-screen bg-slate-100 p-8">
-      <div className="mx-auto max-w-xl rounded-2xl bg-white p-6 text-slate-900 shadow-sm">
-        {title}
-      </div>
-    </main>
-  );
-}
+function StatusBadge({
+  saldo,
+  dias,
+  activo,
+}: {
+  saldo: number;
+  dias: number;
+  activo: boolean;
+}) {
+  if (!activo) {
+    return (
+      <span className="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">
+        DADA DE BAJA
+      </span>
+    );
+  }
 
-function StatusBadge({ dias }: { dias: number }) {
+  if (saldo <= 0) {
+    return (
+      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
+        PAGADA
+      </span>
+    );
+  }
+
   if (dias < 0) {
     return (
       <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
-        VENCIDO
+        VENCIDA
       </span>
     );
   }
 
   if (dias === 0) {
     return (
-      <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
+      <span className="rounded-full bg-slate-200 px-3 py-1 text-sm font-semibold text-slate-700">
         VENCE HOY
       </span>
     );
   }
 
   return (
-    <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-700">
+    <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
       AL DÍA
     </span>
+  );
+}
+
+function Badge({ label }: { label: string }) {
+  return (
+    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+      {label}
+    </span>
+  );
+}
+
+function StateMessage({ title }: { title: string }) {
+  return (
+    <main className="min-h-screen bg-slate-100 p-8">
+      <div className="mx-auto max-w-xl rounded-2xl bg-white p-6 text-slate-900 shadow-sm ring-1 ring-slate-200">
+        {title}
+      </div>
+    </main>
   );
 }

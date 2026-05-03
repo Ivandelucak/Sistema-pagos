@@ -1,12 +1,12 @@
 import Link from "next/link";
 import Image from "next/image";
+import LogoutButton from "@/components/LogoutButton";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
-      {/* HEADER */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 backdrop-blur shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 shadow-md backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <Link
             href="/"
             className="group flex items-center gap-3 transition hover:opacity-90"
@@ -28,15 +28,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-1 text-sm">
-            <NavItem href="/" label="Inicio" />
-            <NavItem href="/hoy" label="Cobros del Día" />
-            <NavItem href="/clientes" label="Clientes" />
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav className="flex items-center gap-1 text-sm">
+              <NavItem href="/" label="Inicio" />
+              <NavItem href="/hoy" label="Cobros del Día" />
+              <NavItem href="/clientes" label="Clientes" />
+            </nav>
+
+            <LogoutButton />
+          </div>
         </div>
       </header>
 
-      {/* CONTENIDO */}
       <div className="animate-fade-in">{children}</div>
     </div>
   );

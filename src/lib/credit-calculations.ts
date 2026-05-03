@@ -1,5 +1,9 @@
 export type CreditStatus = "VENCIDO" | "VIGENTE" | "PAGADO";
 
+function normalizeDate(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 export function calculateCreditTracking({
   fechaInicio,
   frecuenciaDias,
@@ -26,18 +30,17 @@ export function calculateCreditTracking({
 
   const cuotasCompletas = cuotasPagadas;
 
-  const proximoVencimiento = new Date(fechaInicio);
+  const fechaBase = normalizeDate(fechaInicio);
+
+  const proximoVencimiento = new Date(fechaBase);
   proximoVencimiento.setDate(
     proximoVencimiento.getDate() + cuotasPagadas * frecuenciaDias,
   );
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = normalizeDate(new Date());
+  const vencimiento = normalizeDate(proximoVencimiento);
 
-  const vencimiento = new Date(proximoVencimiento);
-  vencimiento.setHours(0, 0, 0, 0);
-
-  const diasParaVencer = Math.ceil(
+  const diasParaVencer = Math.round(
     (vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24),
   );
 

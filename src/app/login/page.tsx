@@ -10,7 +10,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+    <main className="flex min-h-[calc(100vh-88px)] items-center justify-center px-4 py-8">
       <section className="w-full max-w-md rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h1 className="text-2xl font-bold text-slate-950">Iniciar sesión</h1>
 

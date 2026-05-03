@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import AppShell from "@/components/AppShell";
+import ConditionalAppShell from "@/components/ConditionalAppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title: "Sistema de pagos",
   description: "Gestión de clientes, cuentas y cobros",
 };
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -24,8 +25,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body>
-        <AppShell>{children}</AppShell>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <ConditionalAppShell>{children}</ConditionalAppShell>
       </body>
     </html>
   );

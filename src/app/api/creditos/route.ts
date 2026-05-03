@@ -3,6 +3,16 @@ import { requireAdmin } from "@/lib/auth";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 import { prisma } from "@/lib/prisma";
 
+function parseInputDate(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
 export async function POST(req: Request) {
   try {
     await requireAdmin();
@@ -12,7 +22,7 @@ export async function POST(req: Request) {
     const clientId = Number(body.clientId);
     const vendedorId = Number(body.vendedorId);
     const tipo = String(body.tipo ?? "").trim();
-    const fechaInicio = new Date(body.fechaInicio);
+    const fechaInicio = parseInputDate(body.fechaInicio);
     const frecuenciaDias = Number(body.frecuenciaDias);
     const total = Number(body.total);
     const cantidadCuotas = Number(body.cantidadCuotas);
@@ -21,7 +31,7 @@ export async function POST(req: Request) {
       !Number.isInteger(clientId) ||
       !Number.isInteger(vendedorId) ||
       !tipo ||
-      Number.isNaN(fechaInicio.getTime()) ||
+      !fechaInicio ||
       !Number.isInteger(frecuenciaDias) ||
       frecuenciaDias <= 0 ||
       !Number.isFinite(total) ||
