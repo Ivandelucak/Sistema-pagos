@@ -84,6 +84,23 @@ export default async function CuentaPage({
     );
   }
 
+  const movimientosOrdenados = [...credito.payments].sort((a, b) => {
+    const cuotaA = paymentCuotaMap.get(a.id) ?? 1;
+    const cuotaB = paymentCuotaMap.get(b.id) ?? 1;
+
+    if (cuotaA !== cuotaB) {
+      return cuotaB - cuotaA;
+    }
+
+    const fechaDiff = b.fechaPago.getTime() - a.fechaPago.getTime();
+
+    if (fechaDiff !== 0) {
+      return fechaDiff;
+    }
+
+    return b.id - a.id;
+  });
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
       <section className="mx-auto max-w-6xl space-y-6">
@@ -310,6 +327,7 @@ export default async function CuentaPage({
                   <RegistrarCobroButton
                     creditId={credito.id}
                     saldo={tracking.saldo}
+                    valorCuota={credito.valorCuota}
                   />
                 )}
 
@@ -340,9 +358,9 @@ export default async function CuentaPage({
           </div>
 
           <div className="mt-6 space-y-4">
-            {credito.payments.map((pago, index) => {
+            {movimientosOrdenados.map((pago, index) => {
               const cuotaNumero = paymentCuotaMap.get(pago.id) ?? 1;
-              const isLast = index === credito.payments.length - 1;
+              const isLast = index === movimientosOrdenados.length - 1;
 
               return (
                 <div key={pago.id} className="relative pl-6">

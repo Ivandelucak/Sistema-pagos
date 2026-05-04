@@ -9,9 +9,13 @@ export async function recalculateCredit(creditId: number) {
     },
   });
 
-  if (!credit) throw new Error("Crédito no encontrado");
+  if (!credit) {
+    throw new Error("Crédito no encontrado");
+  }
 
-  const totalPagado = credit.payments.reduce((acc, p) => acc + p.monto, 0);
+  const totalPagado = credit.payments.reduce((acc, payment) => {
+    return acc + payment.monto;
+  }, 0);
 
   const tracking = calculateCreditTracking({
     fechaInicio: credit.fechaInicio,

@@ -1,14 +1,27 @@
 import { NextResponse } from "next/server";
 import { registerPayment } from "@/lib/payments";
 import { requireAdmin } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+function parseInputDate(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
 
 export async function POST(req: Request) {
   try {
-    await requireAdmin();
+    const user = await requireAdmin();
+
     const body = await req.json();
 
     const creditId = Number(body.creditId);
     const monto = Number(body.monto);
+    const fechaPago = parseInputDate(body.fechaPago);
 
     if (!Number.isInteger(creditId)) {
       return NextResponse.json({ error: "Cuenta inválida" }, { status: 400 });
@@ -18,10 +31,57 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     }
 
+    if (!fechaPago) {
+      return NextResponse.json(
+        { error: "Fecha de pago inválida" },
+        { status: 400 },
+      );
+    }
+
+    const credito = await prisma.credit.findUnique({
+      where: {
+        id: creditId,
+      },
+      select: {
+        id: true,
+        saldo: true,
+        activo: true,
+      },
+    });
+
+    if (!credito) {
+      return NextResponse.json(
+        { error: "Cuenta no encontrada" },
+        { status: 404 },
+      );
+    }
+
+    if (!credito.activo) {
+      return NextResponse.json(
+        { error: "No se pueden registrar cobros en una cuenta dada de baja" },
+        { status: 400 },
+      );
+    }
+
+    if (credito.saldo <= 0) {
+      return NextResponse.json(
+        { error: "La cuenta no tiene saldo pendiente" },
+        { status: 400 },
+      );
+    }
+
+    if (monto > credito.saldo) {
+      return NextResponse.json(
+        { error: "El monto no puede ser mayor al saldo pendiente" },
+        { status: 400 },
+      );
+    }
+
     await registerPayment({
       creditId,
       monto,
-      userId: 2,
+      userId: user.id,
+      fechaPago,
     });
 
     return NextResponse.json({ ok: true });

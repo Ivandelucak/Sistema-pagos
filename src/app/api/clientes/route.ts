@@ -5,12 +5,12 @@ import { requireAdmin } from "@/lib/auth";
 export async function POST(req: Request) {
   try {
     await requireAdmin();
+
     const body = await req.json();
 
     const nombre = String(body.nombre ?? "").trim();
     const telefono = String(body.telefono ?? "").trim();
     const direccion = String(body.direccion ?? "").trim();
-
     const vendedorId = Number(body.vendedorId);
 
     if (!nombre) {
@@ -24,12 +24,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Vendedor inválido" }, { status: 400 });
     }
 
+    const vendedor = await prisma.user.findFirst({
+      where: {
+        id: vendedorId,
+        rol: "VENDEDOR",
+        activo: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!vendedor) {
+      return NextResponse.json(
+        { error: "El vendedor seleccionado no existe o no está activo" },
+        { status: 400 },
+      );
+    }
+
     const cliente = await prisma.client.create({
       data: {
         nombre,
         telefono: telefono || null,
         direccion: direccion || null,
         vendedorId,
+        activo: true,
       },
     });
 
