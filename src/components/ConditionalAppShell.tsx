@@ -1,19 +1,17 @@
-"use client";
-
-import { usePathname } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import LoginShell from "@/components/LoginShell";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function ConditionalAppShell({
+export default async function ConditionalAppShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const user = await getCurrentUser();
 
-  if (pathname === "/login") {
+  if (!user) {
     return <LoginShell>{children}</LoginShell>;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return <AppShell user={user}>{children}</AppShell>;
 }

@@ -1,9 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
-import LogoutButton from "@/components/LogoutButton";
 import AppNav from "@/components/AppNav";
+import UserMenu from "@/components/UserMenu";
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+type AppShellUser = {
+  id: number;
+  nombre: string;
+  email: string;
+  rol: "ADMIN" | "VENDEDOR";
+};
+
+export default function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: AppShellUser;
+}) {
   return (
     <div className="min-h-screen bg-slate-100 text-slate-900">
       <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/95 shadow-md backdrop-blur">
@@ -32,7 +45,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
 
             <div className="md:hidden">
-              <LogoutButton />
+              <UserMenu user={user} />
             </div>
           </div>
 
@@ -40,7 +53,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <AppNav />
 
             <div className="hidden md:block">
-              <LogoutButton />
+              <UserMenu user={user} />
             </div>
           </div>
         </div>
