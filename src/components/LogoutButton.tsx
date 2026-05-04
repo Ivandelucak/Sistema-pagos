@@ -62,7 +62,8 @@ export default function LogoutButton() {
         <div className="fixed inset-0 z-9999 grid min-h-screen place-items-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <h2 className="text-lg font-semibold text-slate-950">
-              Cerrar sesión
+              <span className="hidden sm:inline">Cerrar sesión</span>
+              <span className="sm:hidden">Salir</span>
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-slate-600">

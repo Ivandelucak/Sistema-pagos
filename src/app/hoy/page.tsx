@@ -3,41 +3,156 @@ import { requireUser } from "@/lib/auth";
 import { getCreditsDueToday, getOverdueCredits } from "@/lib/credits";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 
-export default async function HoyPage() {
+type CreditItem = Awaited<ReturnType<typeof getOverdueCredits>>[number];
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function filterCredits(credits: CreditItem[], search: string) {
+  const query = normalizeText(search.trim());
+
+  if (!query) return credits;
+
+  return credits.filter((credito) => {
+    const fields = [
+      credito.client.nombre,
+      credito.client.direccion ?? "",
+      credito.tipo,
+      credito.vendedor?.nombre ?? "",
+    ];
+
+    return fields.some((field) => normalizeText(field).includes(query));
+  });
+}
+
+export default async function HoyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+  }>;
+}) {
   const user = await requireUser();
+  const { q } = await searchParams;
+
+  const search = q?.trim() ?? "";
 
   const vendedorId = user.rol === "VENDEDOR" ? user.id : undefined;
 
-  const vencenHoy = await getCreditsDueToday(vendedorId);
-  const vencidos = await getOverdueCredits(vendedorId);
+  const vencenHoyBase = await getCreditsDueToday(vendedorId);
+  const vencidosBase = await getOverdueCredits(vendedorId);
+
+  const vencenHoy = filterCredits(vencenHoyBase, search);
+  const vencidos = filterCredits(vencidosBase, search);
+
+  const totalOperativo = vencenHoy.length + vencidos.length;
+  const totalBase = vencenHoyBase.length + vencidosBase.length;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-6">
+    <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
       <section className="mx-auto max-w-3xl space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-950">Cobros del día</h1>
-          <p className="mt-1 text-slate-600">Clientes a gestionar hoy.</p>
-          <p className="mt-1 text-sm text-slate-500">
-            {user.nombre} · {user.rol}
-          </p>
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="flex flex-col gap-3">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                Cobros del día
+              </h1>
+
+              <p className="mt-2 text-slate-600">
+                Vista rápida para consultar clientes pendientes y vencidos.
+              </p>
+
+              <p className="mt-1 text-sm text-slate-500">
+                {user.nombre} · {user.rol}
+              </p>
+            </div>
+
+            {user.rol === "VENDEDOR" && (
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p className="text-sm font-medium text-slate-700">
+                  Modo consulta
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Esta vista es para consultar la cartera asignada. Los cobros
+                  se registran desde administración.
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <SummaryCard title="Pendientes hoy" value={vencenHoy.length} />
+        <form className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <label className="text-sm font-medium text-slate-700">
+            Buscar cliente
+          </label>
+
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              name="q"
+              defaultValue={search}
+              placeholder="Buscar por nombre, dirección o tipo..."
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
+            />
+
+            <button
+              type="submit"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-slate-800 active:scale-[0.98]"
+            >
+              Buscar
+            </button>
+
+            {search && (
+              <Link
+                href="/hoy"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+              >
+                Limpiar
+              </Link>
+            )}
+          </div>
+
+          {search && (
+            <p className="mt-3 text-sm text-slate-500">
+              Mostrando {totalOperativo} de {totalBase} cuenta
+              {totalBase === 1 ? "" : "s"} para “{search}”.
+            </p>
+          )}
+        </form>
+
+        <div className="grid grid-cols-3 gap-3">
+          <SummaryCard title="Total" value={totalOperativo} />
+          <SummaryCard title="Hoy" value={vencenHoy.length} />
           <SummaryCard title="Vencidos" value={vencidos.length} danger />
         </div>
 
         <CreditList
           title="Pendientes de hoy"
+          description="Cuentas que corresponden a la jornada actual."
           credits={vencenHoy}
-          emptyText="No hay cuentas que venzan hoy."
+          emptyText={
+            search
+              ? "No hay pendientes de hoy que coincidan con la búsqueda."
+              : "No hay cuentas que venzan hoy."
+          }
+          showSeller={user.rol === "ADMIN"}
+          variant="today"
         />
 
         <CreditList
           title="Vencidos"
+          description="Cuentas con vencimiento anterior a la fecha actual."
           credits={vencidos}
-          emptyText="No hay cuentas vencidas."
-          danger
+          emptyText={
+            search
+              ? "No hay vencidos que coincidan con la búsqueda."
+              : "No hay cuentas vencidas."
+          }
+          showSeller={user.rol === "ADMIN"}
+          variant="overdue"
         />
       </section>
     </main>
@@ -46,30 +161,41 @@ export default async function HoyPage() {
 
 function CreditList({
   title,
+  description,
   credits,
   emptyText,
-  danger,
+  showSeller,
+  variant,
 }: {
   title: string;
-  credits: Awaited<ReturnType<typeof getOverdueCredits>>;
+  description: string;
+  credits: CreditItem[];
   emptyText: string;
-  danger?: boolean;
+  showSeller?: boolean;
+  variant: "today" | "overdue";
 }) {
+  const isOverdueSection = variant === "overdue";
+
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+          <p className="mt-1 text-sm text-slate-500">{description}</p>
+        </div>
 
         <span
-          className={`text-sm font-semibold ${
-            danger ? "text-red-600" : "text-slate-600"
+          className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
+            isOverdueSection
+              ? "bg-red-100 text-red-700"
+              : "bg-slate-100 text-slate-700"
           }`}
         >
-          {credits.length} cuenta{credits.length === 1 ? "" : "s"}
+          {credits.length}
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="mt-5 space-y-3">
         {credits.map((credito) => {
           const tracking = calculateCreditTracking({
             fechaInicio: credito.fechaInicio,
@@ -80,46 +206,80 @@ function CreditList({
           });
 
           const vencida = tracking.diasParaVencer < 0;
-          const hoy = tracking.diasParaVencer === 0;
+          const venceHoy = tracking.diasParaVencer === 0;
 
           return (
             <Link
               key={credito.id}
               href={`/cuentas/${credito.id}`}
-              className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50"
+              className={`group block rounded-2xl border bg-white p-4 shadow-sm ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] ${
+                vencida
+                  ? "border-red-200 border-l-4 border-l-red-500 ring-red-100 hover:border-red-300"
+                  : "border-slate-200 border-l-4 border-l-slate-400 ring-slate-100 hover:border-slate-300"
+              }`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-slate-950">
-                    {credito.client.nombre}
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-950 transition-colors group-hover:text-slate-700">
+                      {credito.client.nombre}
+                    </p>
 
-                  <p className="text-sm text-slate-500">{credito.tipo}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {credito.tipo}
+                    </p>
 
-                  <p
-                    className={`mt-1 text-sm font-semibold ${
-                      vencida
-                        ? "text-red-600"
-                        : hoy
-                          ? "text-blue-600"
-                          : "text-slate-700"
-                    }`}
-                  >
-                    {vencida
-                      ? `Vencido hace ${Math.abs(
-                          tracking.diasParaVencer,
-                        )} día${Math.abs(tracking.diasParaVencer) === 1 ? "" : "s"}`
-                      : hoy
-                        ? "Vence hoy"
-                        : `En ${tracking.diasParaVencer} días`}
-                  </p>
+                    {credito.client.direccion && (
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                        {credito.client.direccion}
+                      </p>
+                    )}
+
+                    {showSeller && (
+                      <p className="mt-1 text-sm text-slate-500">
+                        Vendedor: {credito.vendedor.nombre}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs font-medium text-slate-500">Saldo</p>
+                    <p
+                      className={`text-base font-bold ${
+                        vencida ? "text-red-600" : "text-slate-950"
+                      }`}
+                    >
+                      ${tracking.saldo.toLocaleString("es-AR")}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="shrink-0 text-right">
-                  <p className="text-sm text-slate-500">Saldo</p>
-                  <p className="font-bold text-red-600">
-                    ${tracking.saldo.toLocaleString("es-AR")}
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                        vencida
+                          ? "bg-red-100 text-red-700"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {vencida
+                        ? `VENCIDA · ${Math.abs(tracking.diasParaVencer)} día${
+                            Math.abs(tracking.diasParaVencer) === 1 ? "" : "s"
+                          }`
+                        : venceHoy
+                          ? "VENCE HOY"
+                          : `EN ${tracking.diasParaVencer} DÍAS`}
+                    </span>
+
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                      Cuota ${credito.valorCuota.toLocaleString("es-AR")}
+                    </span>
+                  </div>
+
+                  <span className="text-sm font-semibold text-slate-700 transition-colors group-hover:text-slate-950">
+                    Ver cuenta →
+                  </span>
                 </div>
               </div>
             </Link>
@@ -127,8 +287,8 @@ function CreditList({
         })}
 
         {credits.length === 0 && (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
-            {emptyText}
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="text-sm font-medium text-slate-600">{emptyText}</p>
           </div>
         )}
       </div>
@@ -146,10 +306,13 @@ function SummaryCard({
   danger?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm text-slate-500">{title}</p>
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        {title}
+      </p>
+
       <p
-        className={`text-2xl font-bold ${
+        className={`mt-2 text-2xl font-bold ${
           danger ? "text-red-600" : "text-slate-950"
         }`}
       >

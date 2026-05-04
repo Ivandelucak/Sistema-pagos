@@ -20,7 +20,7 @@ export default function ConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[10000] grid min-h-screen place-items-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-10000 grid min-h-screen place-items-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
         <h3 className="text-xl font-semibold text-slate-950">{title}</h3>
 
