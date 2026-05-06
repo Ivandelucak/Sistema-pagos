@@ -124,7 +124,7 @@ export default async function ClientesPage({
 
           {user.rol === "ADMIN" && (
             <Link
-              href="/clientes/nuevo"
+              href="/clientes/nuevo?from=/"
               className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:scale-[0.98]"
             >
               Nuevo cliente

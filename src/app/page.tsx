@@ -125,7 +125,7 @@ export default async function Home({
 
           <div className="flex flex-col gap-2 sm:flex-row">
             <Link
-              href="/clientes/nuevo"
+              href="/clientes/nuevo?from=/"
               className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
             >
               Nuevo cliente

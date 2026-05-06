@@ -20,42 +20,36 @@ export default function ConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-10000 grid min-h-screen place-items-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
-        <h3 className="text-xl font-semibold text-slate-950">{title}</h3>
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 px-4 py-4 sm:py-6">
+      <div className="mx-auto flex min-h-dvh w-full max-w-md items-start sm:items-center">
+        <div className="my-auto max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl bg-white p-6 shadow-xl sm:max-h-[calc(100dvh-3rem)]">
+          <h3 className="text-lg font-semibold text-slate-950">{title}</h3>
 
-        <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
 
-        {danger && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3">
-            <p className="text-sm font-medium text-red-700">
-              Esta acción puede modificar información operativa de la cuenta.
-            </p>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {cancelText}
+            </button>
+
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={loading}
+              className={`rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 ${
+                danger
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-slate-900 hover:bg-slate-800"
+              }`}
+            >
+              {loading ? "Procesando..." : confirmText}
+            </button>
           </div>
-        )}
-
-        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {cancelText}
-          </button>
-
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={loading}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 ${
-              danger
-                ? "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50"
-                : "bg-slate-900 text-white hover:bg-slate-800"
-            }`}
-          >
-            {loading ? "Procesando..." : confirmText}
-          </button>
         </div>
       </div>
     </div>
