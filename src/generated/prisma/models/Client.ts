@@ -41,6 +41,8 @@ export type ClientMinAggregateOutputType = {
   nombre: string | null
   telefono: string | null
   direccion: string | null
+  observacion: string | null
+  observacionTipo: $Enums.ClientObservationType | null
   activo: boolean | null
   vendedorId: number | null
   createdAt: Date | null
@@ -51,6 +53,8 @@ export type ClientMaxAggregateOutputType = {
   nombre: string | null
   telefono: string | null
   direccion: string | null
+  observacion: string | null
+  observacionTipo: $Enums.ClientObservationType | null
   activo: boolean | null
   vendedorId: number | null
   createdAt: Date | null
@@ -61,6 +65,8 @@ export type ClientCountAggregateOutputType = {
   nombre: number
   telefono: number
   direccion: number
+  observacion: number
+  observacionTipo: number
   activo: number
   vendedorId: number
   createdAt: number
@@ -83,6 +89,8 @@ export type ClientMinAggregateInputType = {
   nombre?: true
   telefono?: true
   direccion?: true
+  observacion?: true
+  observacionTipo?: true
   activo?: true
   vendedorId?: true
   createdAt?: true
@@ -93,6 +101,8 @@ export type ClientMaxAggregateInputType = {
   nombre?: true
   telefono?: true
   direccion?: true
+  observacion?: true
+  observacionTipo?: true
   activo?: true
   vendedorId?: true
   createdAt?: true
@@ -103,6 +113,8 @@ export type ClientCountAggregateInputType = {
   nombre?: true
   telefono?: true
   direccion?: true
+  observacion?: true
+  observacionTipo?: true
   activo?: true
   vendedorId?: true
   createdAt?: true
@@ -200,6 +212,8 @@ export type ClientGroupByOutputType = {
   nombre: string
   telefono: string | null
   direccion: string | null
+  observacion: string | null
+  observacionTipo: $Enums.ClientObservationType
   activo: boolean
   vendedorId: number
   createdAt: Date
@@ -233,6 +247,8 @@ export type ClientWhereInput = {
   nombre?: Prisma.StringFilter<"Client"> | string
   telefono?: Prisma.StringNullableFilter<"Client"> | string | null
   direccion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFilter<"Client"> | $Enums.ClientObservationType
   activo?: Prisma.BoolFilter<"Client"> | boolean
   vendedorId?: Prisma.IntFilter<"Client"> | number
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
@@ -245,6 +261,8 @@ export type ClientOrderByWithRelationInput = {
   nombre?: Prisma.SortOrder
   telefono?: Prisma.SortOrderInput | Prisma.SortOrder
   direccion?: Prisma.SortOrderInput | Prisma.SortOrder
+  observacion?: Prisma.SortOrderInput | Prisma.SortOrder
+  observacionTipo?: Prisma.SortOrder
   activo?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -261,6 +279,8 @@ export type ClientWhereUniqueInput = Prisma.AtLeast<{
   nombre?: Prisma.StringFilter<"Client"> | string
   telefono?: Prisma.StringNullableFilter<"Client"> | string | null
   direccion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFilter<"Client"> | $Enums.ClientObservationType
   activo?: Prisma.BoolFilter<"Client"> | boolean
   vendedorId?: Prisma.IntFilter<"Client"> | number
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
@@ -273,6 +293,8 @@ export type ClientOrderByWithAggregationInput = {
   nombre?: Prisma.SortOrder
   telefono?: Prisma.SortOrderInput | Prisma.SortOrder
   direccion?: Prisma.SortOrderInput | Prisma.SortOrder
+  observacion?: Prisma.SortOrderInput | Prisma.SortOrder
+  observacionTipo?: Prisma.SortOrder
   activo?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -291,6 +313,8 @@ export type ClientScalarWhereWithAggregatesInput = {
   nombre?: Prisma.StringWithAggregatesFilter<"Client"> | string
   telefono?: Prisma.StringNullableWithAggregatesFilter<"Client"> | string | null
   direccion?: Prisma.StringNullableWithAggregatesFilter<"Client"> | string | null
+  observacion?: Prisma.StringNullableWithAggregatesFilter<"Client"> | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeWithAggregatesFilter<"Client"> | $Enums.ClientObservationType
   activo?: Prisma.BoolWithAggregatesFilter<"Client"> | boolean
   vendedorId?: Prisma.IntWithAggregatesFilter<"Client"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Client"> | Date | string
@@ -300,6 +324,8 @@ export type ClientCreateInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   createdAt?: Date | string
   vendedor: Prisma.UserCreateNestedOneWithoutClientsInput
@@ -311,6 +337,8 @@ export type ClientUncheckedCreateInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   vendedorId: number
   createdAt?: Date | string
@@ -321,6 +349,8 @@ export type ClientUpdateInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vendedor?: Prisma.UserUpdateOneRequiredWithoutClientsNestedInput
@@ -332,6 +362,8 @@ export type ClientUncheckedUpdateInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -343,6 +375,8 @@ export type ClientCreateManyInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   vendedorId: number
   createdAt?: Date | string
@@ -352,6 +386,8 @@ export type ClientUpdateManyMutationInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -361,6 +397,8 @@ export type ClientUncheckedUpdateManyInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -387,6 +425,8 @@ export type ClientCountOrderByAggregateInput = {
   nombre?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
   direccion?: Prisma.SortOrder
+  observacion?: Prisma.SortOrder
+  observacionTipo?: Prisma.SortOrder
   activo?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -402,6 +442,8 @@ export type ClientMaxOrderByAggregateInput = {
   nombre?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
   direccion?: Prisma.SortOrder
+  observacion?: Prisma.SortOrder
+  observacionTipo?: Prisma.SortOrder
   activo?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -412,6 +454,8 @@ export type ClientMinOrderByAggregateInput = {
   nombre?: Prisma.SortOrder
   telefono?: Prisma.SortOrder
   direccion?: Prisma.SortOrder
+  observacion?: Prisma.SortOrder
+  observacionTipo?: Prisma.SortOrder
   activo?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -473,6 +517,10 @@ export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
 }
 
+export type EnumClientObservationTypeFieldUpdateOperationsInput = {
+  set?: $Enums.ClientObservationType
+}
+
 export type ClientCreateNestedOneWithoutCreditsInput = {
   create?: Prisma.XOR<Prisma.ClientCreateWithoutCreditsInput, Prisma.ClientUncheckedCreateWithoutCreditsInput>
   connectOrCreate?: Prisma.ClientCreateOrConnectWithoutCreditsInput
@@ -491,6 +539,8 @@ export type ClientCreateWithoutVendedorInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   createdAt?: Date | string
   credits?: Prisma.CreditCreateNestedManyWithoutClientInput
@@ -501,6 +551,8 @@ export type ClientUncheckedCreateWithoutVendedorInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   createdAt?: Date | string
   credits?: Prisma.CreditUncheckedCreateNestedManyWithoutClientInput
@@ -540,6 +592,8 @@ export type ClientScalarWhereInput = {
   nombre?: Prisma.StringFilter<"Client"> | string
   telefono?: Prisma.StringNullableFilter<"Client"> | string | null
   direccion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacion?: Prisma.StringNullableFilter<"Client"> | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFilter<"Client"> | $Enums.ClientObservationType
   activo?: Prisma.BoolFilter<"Client"> | boolean
   vendedorId?: Prisma.IntFilter<"Client"> | number
   createdAt?: Prisma.DateTimeFilter<"Client"> | Date | string
@@ -549,6 +603,8 @@ export type ClientCreateWithoutCreditsInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   createdAt?: Date | string
   vendedor: Prisma.UserCreateNestedOneWithoutClientsInput
@@ -559,6 +615,8 @@ export type ClientUncheckedCreateWithoutCreditsInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   vendedorId: number
   createdAt?: Date | string
@@ -584,6 +642,8 @@ export type ClientUpdateWithoutCreditsInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vendedor?: Prisma.UserUpdateOneRequiredWithoutClientsNestedInput
@@ -594,6 +654,8 @@ export type ClientUncheckedUpdateWithoutCreditsInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -604,6 +666,8 @@ export type ClientCreateManyVendedorInput = {
   nombre: string
   telefono?: string | null
   direccion?: string | null
+  observacion?: string | null
+  observacionTipo?: $Enums.ClientObservationType
   activo?: boolean
   createdAt?: Date | string
 }
@@ -612,6 +676,8 @@ export type ClientUpdateWithoutVendedorInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   credits?: Prisma.CreditUpdateManyWithoutClientNestedInput
@@ -622,6 +688,8 @@ export type ClientUncheckedUpdateWithoutVendedorInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   credits?: Prisma.CreditUncheckedUpdateManyWithoutClientNestedInput
@@ -632,6 +700,8 @@ export type ClientUncheckedUpdateManyWithoutVendedorInput = {
   nombre?: Prisma.StringFieldUpdateOperationsInput | string
   telefono?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   direccion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  observacionTipo?: Prisma.EnumClientObservationTypeFieldUpdateOperationsInput | $Enums.ClientObservationType
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -672,6 +742,8 @@ export type ClientSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   nombre?: boolean
   telefono?: boolean
   direccion?: boolean
+  observacion?: boolean
+  observacionTipo?: boolean
   activo?: boolean
   vendedorId?: boolean
   createdAt?: boolean
@@ -687,12 +759,14 @@ export type ClientSelectScalar = {
   nombre?: boolean
   telefono?: boolean
   direccion?: boolean
+  observacion?: boolean
+  observacionTipo?: boolean
   activo?: boolean
   vendedorId?: boolean
   createdAt?: boolean
 }
 
-export type ClientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "telefono" | "direccion" | "activo" | "vendedorId" | "createdAt", ExtArgs["result"]["client"]>
+export type ClientOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nombre" | "telefono" | "direccion" | "observacion" | "observacionTipo" | "activo" | "vendedorId" | "createdAt", ExtArgs["result"]["client"]>
 export type ClientInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   vendedor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   credits?: boolean | Prisma.Client$creditsArgs<ExtArgs>
@@ -710,6 +784,8 @@ export type $ClientPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     nombre: string
     telefono: string | null
     direccion: string | null
+    observacion: string | null
+    observacionTipo: $Enums.ClientObservationType
     activo: boolean
     vendedorId: number
     createdAt: Date
@@ -1088,6 +1164,8 @@ export interface ClientFieldRefs {
   readonly nombre: Prisma.FieldRef<"Client", 'String'>
   readonly telefono: Prisma.FieldRef<"Client", 'String'>
   readonly direccion: Prisma.FieldRef<"Client", 'String'>
+  readonly observacion: Prisma.FieldRef<"Client", 'String'>
+  readonly observacionTipo: Prisma.FieldRef<"Client", 'ClientObservationType'>
   readonly activo: Prisma.FieldRef<"Client", 'Boolean'>
   readonly vendedorId: Prisma.FieldRef<"Client", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Client", 'DateTime'>

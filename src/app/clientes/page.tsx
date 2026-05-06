@@ -47,7 +47,6 @@ export default async function ClientesPage({
   const clientes = await prisma.client.findMany({
     where: {
       activo: true,
-      ...(Number.isInteger(vendedorId) ? { vendedorId } : {}),
       ...(search
         ? {
             nombre: {
@@ -55,18 +54,50 @@ export default async function ClientesPage({
             },
           }
         : {}),
+      ...(Number.isInteger(vendedorId)
+        ? {
+            OR: [
+              {
+                vendedorId,
+              },
+              {
+                credits: {
+                  some: {
+                    vendedorId,
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
     },
     include: {
       vendedor: true,
-      credits: true,
+      credits: {
+        include: {
+          vendedor: true,
+        },
+      },
     },
     orderBy: {
       nombre: "asc",
     },
   });
 
+  const getVisibleCredits = (cliente: (typeof clientes)[number]) => {
+    if (Number.isInteger(vendedorId)) {
+      return cliente.credits.filter(
+        (cuenta) => cuenta.vendedorId === vendedorId,
+      );
+    }
+
+    return cliente.credits;
+  };
+
   const clientesConCuentaActiva = clientes.filter((cliente) =>
-    cliente.credits.some((cuenta) => cuenta.activo && cuenta.saldo > 0),
+    getVisibleCredits(cliente).some(
+      (cuenta) => cuenta.activo && cuenta.saldo > 0,
+    ),
   ).length;
 
   const clientesSinCuentaActiva = clientes.length - clientesConCuentaActiva;
@@ -83,7 +114,7 @@ export default async function ClientesPage({
             <p className="mt-2 text-slate-600">
               {user.rol === "ADMIN"
                 ? "Administrá y consultá la cartera de clientes por vendedor."
-                : "Consultá los clientes asignados a tu cartera."}
+                : "Consultá los clientes vinculados a tu cartera."}
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
@@ -177,9 +208,9 @@ export default async function ClientesPage({
               <p className="text-sm text-slate-500">
                 {user.rol === "ADMIN"
                   ? vendedorSeleccionado
-                    ? `Mostrando clientes de ${vendedorSeleccionado.nombre}.`
+                    ? `Mostrando clientes con cuentas de ${vendedorSeleccionado.nombre}.`
                     : "Mostrando clientes de todos los vendedores."
-                  : "Mostrando únicamente tu cartera asignada."}
+                  : "Mostrando clientes con cuentas vinculadas a tu usuario."}
               </p>
             </div>
 
@@ -190,11 +221,13 @@ export default async function ClientesPage({
 
           <div className="mt-5 grid gap-3">
             {clientes.map((cliente) => {
-              const cuentasActivas = cliente.credits.filter(
+              const cuentasVisibles = getVisibleCredits(cliente);
+
+              const cuentasActivas = cuentasVisibles.filter(
                 (cuenta) => cuenta.activo && cuenta.saldo > 0,
               );
 
-              const cuentasFinalizadas = cliente.credits.filter(
+              const cuentasFinalizadas = cuentasVisibles.filter(
                 (cuenta) => cuenta.saldo <= 0,
               );
 
@@ -216,14 +249,20 @@ export default async function ClientesPage({
                   }`}
                 >
                   <div className="grid gap-4 md:grid-cols-4 md:items-center">
-                    <div className="md:col-span-1">
+                    <div>
                       <p className="font-semibold text-slate-950 transition-colors group-hover:text-slate-700">
                         {cliente.nombre}
                       </p>
 
                       {user.rol === "ADMIN" && (
                         <p className="mt-1 text-sm text-slate-500">
-                          Vendedor: {cliente.vendedor.nombre}
+                          Vendedor principal: {cliente.vendedor.nombre}
+                        </p>
+                      )}
+
+                      {user.rol === "ADMIN" && vendedorSeleccionado && (
+                        <p className="mt-1 text-xs font-medium text-slate-500">
+                          Mostrando cuentas de {vendedorSeleccionado.nombre}
                         </p>
                       )}
                     </div>

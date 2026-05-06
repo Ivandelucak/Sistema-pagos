@@ -9,9 +9,25 @@
 * 🟢 You can import this file directly.
 */
 
+export const PaymentMethod = {
+  EFECTIVO: 'EFECTIVO',
+  TRANSFERENCIA: 'TRANSFERENCIA'
+} as const
+
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+
 export const Role = {
   ADMIN: 'ADMIN',
   VENDEDOR: 'VENDEDOR'
 } as const
 
 export type Role = (typeof Role)[keyof typeof Role]
+
+
+export const ClientObservationType = {
+  NORMAL: 'NORMAL',
+  ALERTA: 'ALERTA'
+} as const
+
+export type ClientObservationType = (typeof ClientObservationType)[keyof typeof ClientObservationType]

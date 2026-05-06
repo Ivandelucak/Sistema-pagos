@@ -4,24 +4,33 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import ConfirmDialog from "./ConfirmDialog";
 
+type MetodoPago = "EFECTIVO" | "TRANSFERENCIA";
+
 function formatMoney(value: number) {
   return `$${value.toLocaleString("es-AR", {
     maximumFractionDigits: 2,
   })}`;
 }
 
+function formatMetodoPago(value: MetodoPago) {
+  return value === "EFECTIVO" ? "Efectivo" : "Transferencia";
+}
+
 export default function EditPaymentButton({
   paymentId,
   currentAmount,
+  currentMethod = "EFECTIVO",
 }: {
   paymentId: number;
   currentAmount: number;
+  currentMethod?: MetodoPago;
 }) {
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [monto, setMonto] = useState(String(currentAmount));
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>(currentMethod);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -33,6 +42,9 @@ export default function EditPaymentButton({
     return parsedMonto - currentAmount;
   }, [parsedMonto, currentAmount]);
 
+  const hasChanges =
+    parsedMonto !== currentAmount || metodoPago !== currentMethod;
+
   function closeModal() {
     if (loading) return;
 
@@ -40,6 +52,7 @@ export default function EditPaymentButton({
     setConfirmOpen(false);
     setError("");
     setMonto(String(currentAmount));
+    setMetodoPago(currentMethod);
   }
 
   function askConfirm(e: React.FormEvent<HTMLFormElement>) {
@@ -51,8 +64,8 @@ export default function EditPaymentButton({
       return;
     }
 
-    if (parsedMonto === currentAmount) {
-      setError("El nuevo monto es igual al monto actual.");
+    if (!hasChanges) {
+      setError("No hay cambios para guardar.");
       return;
     }
 
@@ -70,6 +83,7 @@ export default function EditPaymentButton({
       },
       body: JSON.stringify({
         monto: parsedMonto,
+        metodoPago,
       }),
     });
 
@@ -108,8 +122,8 @@ export default function EditPaymentButton({
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                Modificá el monto registrado. La cuenta se recalculará
-                automáticamente.
+                Modificá el monto o el método registrado. La cuenta se
+                recalculará automáticamente.
               </p>
             </div>
 
@@ -163,6 +177,26 @@ export default function EditPaymentButton({
                 </p>
               </div>
 
+              <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <p className="text-sm font-medium text-slate-700">
+                  Método de pago
+                </p>
+
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <PaymentMethodButton
+                    label="Efectivo"
+                    active={metodoPago === "EFECTIVO"}
+                    onClick={() => setMetodoPago("EFECTIVO")}
+                  />
+
+                  <PaymentMethodButton
+                    label="Transferencia"
+                    active={metodoPago === "TRANSFERENCIA"}
+                    onClick={() => setMetodoPago("TRANSFERENCIA")}
+                  />
+                </div>
+              </div>
+
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 <p className="text-sm font-medium text-slate-700">
                   Vista previa
@@ -177,7 +211,14 @@ export default function EditPaymentButton({
                       ? `Estás reduciendo este cobro en ${formatMoney(
                           Math.abs(diferencia),
                         )}.`
-                      : "Ingresá un monto diferente para editar el cobro."}
+                      : "El monto queda igual."}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  Método:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {formatMetodoPago(metodoPago)}
+                  </span>
                 </p>
               </div>
 
@@ -215,7 +256,9 @@ export default function EditPaymentButton({
           title="Confirmar edición"
           description={`¿Querés editar este cobro de ${formatMoney(
             currentAmount,
-          )} a ${formatMoney(parsedMonto)}? La cuenta se recalculará automáticamente.`}
+          )} a ${formatMoney(parsedMonto)} con método ${formatMetodoPago(
+            metodoPago,
+          )}? La cuenta se recalculará automáticamente.`}
           confirmText="Aceptar"
           loading={loading}
           onConfirm={handleEdit}
@@ -223,6 +266,30 @@ export default function EditPaymentButton({
         />
       )}
     </>
+  );
+}
+
+function PaymentMethodButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+        active
+          ? "bg-slate-900 text-white shadow-sm"
+          : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

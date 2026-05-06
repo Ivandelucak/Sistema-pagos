@@ -5,7 +5,11 @@ export async function recalculateCredit(creditId: number) {
   const credit = await prisma.credit.findUnique({
     where: { id: creditId },
     include: {
-      payments: true,
+      payments: {
+        orderBy: {
+          fechaPago: "asc",
+        },
+      },
     },
   });
 

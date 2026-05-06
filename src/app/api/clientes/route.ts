@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 
+function normalizeText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
 export async function POST(req: Request) {
   try {
     await requireAdmin();
@@ -12,6 +21,7 @@ export async function POST(req: Request) {
     const telefono = String(body.telefono ?? "").trim();
     const direccion = String(body.direccion ?? "").trim();
     const vendedorId = Number(body.vendedorId);
+    const force = Boolean(body.force);
 
     if (!nombre) {
       return NextResponse.json(
@@ -40,6 +50,47 @@ export async function POST(req: Request) {
         { error: "El vendedor seleccionado no existe o no está activo" },
         { status: 400 },
       );
+    }
+
+    if (!force) {
+      const clientes = await prisma.client.findMany({
+        where: {
+          activo: true,
+        },
+        select: {
+          id: true,
+          nombre: true,
+          telefono: true,
+          direccion: true,
+          vendedor: {
+            select: {
+              nombre: true,
+            },
+          },
+        },
+      });
+
+      const normalizedNombre = normalizeText(nombre);
+
+      const duplicate = clientes.find((cliente) => {
+        return normalizeText(cliente.nombre) === normalizedNombre;
+      });
+
+      if (duplicate) {
+        return NextResponse.json(
+          {
+            error: "Ya existe un cliente con ese nombre.",
+            duplicate: {
+              id: duplicate.id,
+              nombre: duplicate.nombre,
+              telefono: duplicate.telefono,
+              direccion: duplicate.direccion,
+              vendedorNombre: duplicate.vendedor.nombre,
+            },
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const cliente = await prisma.client.create({

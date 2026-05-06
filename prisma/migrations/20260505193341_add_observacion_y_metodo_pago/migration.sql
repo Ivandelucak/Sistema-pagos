@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE `client` ADD COLUMN `observacion` TEXT NULL;
+
+-- AlterTable
+ALTER TABLE `payment` ADD COLUMN `metodoPago` ENUM('EFECTIVO', 'TRANSFERENCIA') NOT NULL DEFAULT 'EFECTIVO';

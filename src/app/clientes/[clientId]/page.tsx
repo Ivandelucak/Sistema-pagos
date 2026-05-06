@@ -1,3 +1,8 @@
+//src/app/clientes/[clientId]/page.tsx
+
+import TransferCreditVendorButton from "@/components/TransferCreditVendorButton";
+import ClientObservationForm from "@/components/ClientObservationForm";
+import TransferClientVendorButton from "@/components/TransferClientVendorButton";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -30,6 +35,9 @@ export default async function ClientePage({
     include: {
       vendedor: true,
       credits: {
+        include: {
+          vendedor: true,
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -41,11 +49,41 @@ export default async function ClientePage({
     return <StateMessage title="Cliente no encontrado" />;
   }
 
-  if (user.rol === "VENDEDOR" && cliente.vendedorId !== user.id) {
+  const vendedorTieneCuenta = cliente.credits.some(
+    (cuenta) => cuenta.vendedorId === user.id,
+  );
+
+  if (
+    user.rol === "VENDEDOR" &&
+    cliente.vendedorId !== user.id &&
+    !vendedorTieneCuenta
+  ) {
     return <StateMessage title="No tenés permiso para ver este cliente" />;
   }
 
-  const cuentasFiltradas = cliente.credits.filter((cuenta) => {
+  const isAdmin = user.rol === "ADMIN";
+
+  const vendedores = isAdmin
+    ? await prisma.user.findMany({
+        where: {
+          rol: "VENDEDOR",
+          activo: true,
+        },
+        select: {
+          id: true,
+          nombre: true,
+        },
+        orderBy: {
+          nombre: "asc",
+        },
+      })
+    : [];
+  const cuentasVisiblesBase =
+    user.rol === "VENDEDOR"
+      ? cliente.credits.filter((cuenta) => cuenta.vendedorId === user.id)
+      : cliente.credits;
+
+  const cuentasFiltradas = cuentasVisiblesBase.filter((cuenta) => {
     if (filtro === "activas") return cuenta.activo;
     if (filtro === "inactivas") return !cuenta.activo;
     return true;
@@ -59,8 +97,10 @@ export default async function ClientePage({
     (cuenta) => cuenta.saldo <= 0,
   );
 
-  const cuentasActivas = cliente.credits.filter((cuenta) => cuenta.activo);
-  const cuentasInactivas = cliente.credits.filter((cuenta) => !cuenta.activo);
+  const cuentasActivas = cuentasVisiblesBase.filter((cuenta) => cuenta.activo);
+  const cuentasInactivas = cuentasVisiblesBase.filter(
+    (cuenta) => !cuenta.activo,
+  );
 
   const cuentasPendientesActivas = cuentasActivas.filter(
     (cuenta) => cuenta.saldo > 0,
@@ -71,7 +111,7 @@ export default async function ClientePage({
     0,
   );
 
-  const cuentasFinalizadasTotal = cliente.credits.filter(
+  const cuentasFinalizadasTotal = cuentasVisiblesBase.filter(
     (cuenta) => cuenta.saldo <= 0,
   ).length;
 
@@ -95,8 +135,11 @@ export default async function ClientePage({
               <p className="mt-1 text-slate-600">Ficha del cliente</p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <Badge label={`Vendedor: ${cliente.vendedor.nombre}`} />
+                <Badge
+                  label={`Vendedor principal: ${cliente.vendedor.nombre}`}
+                />
                 <Badge label={`${cuentasActivas.length} cuentas activas`} />
+
                 {cuentasInactivas.length > 0 && (
                   <Badge
                     label={`${cuentasInactivas.length} dadas de baja`}
@@ -106,15 +149,34 @@ export default async function ClientePage({
               </div>
             </div>
 
+            {user.rol === "VENDEDOR" && (
+              <Badge label="Mostrando solo tus cuentas" muted />
+            )}
+
             {user.rol === "ADMIN" && (
-              <Link
-                href={`/clientes/${cliente.id}/nueva-cuenta`}
-                className="rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:scale-[0.98]"
-              >
-                Nueva cuenta
-              </Link>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <TransferClientVendorButton
+                  clientId={cliente.id}
+                  currentVendorId={cliente.vendedorId}
+                  currentVendorName={cliente.vendedor.nombre}
+                  vendedores={vendedores}
+                />
+
+                <Link
+                  href={`/clientes/${cliente.id}/nueva-cuenta`}
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:scale-[0.98]"
+                >
+                  Nueva cuenta
+                </Link>
+              </div>
             )}
           </div>
+          <ClientObservationForm
+            clientId={cliente.id}
+            initialValue={cliente.observacion ?? ""}
+            initialType={cliente.observacionTipo}
+            canEdit={user.rol === "ADMIN"}
+          />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -199,6 +261,8 @@ export default async function ClientePage({
           description="Cuentas con saldo pendiente para este cliente."
           emptyText="No hay cuentas pendientes para este filtro."
           cuentas={cuentasPendientes}
+          isAdmin={isAdmin}
+          vendedores={vendedores}
         />
 
         <CuentaSection
@@ -207,6 +271,8 @@ export default async function ClientePage({
           emptyText="No hay cuentas finalizadas para este filtro."
           cuentas={cuentasFinalizadas}
           finalizadas
+          isAdmin={isAdmin}
+          vendedores={vendedores}
         />
       </section>
     </main>
@@ -219,6 +285,8 @@ function CuentaSection({
   emptyText,
   cuentas,
   finalizadas,
+  isAdmin,
+  vendedores = [],
 }: {
   title: string;
   description: string;
@@ -230,8 +298,18 @@ function CuentaSection({
     saldo: number;
     total: number;
     activo: boolean;
+    vendedorId: number;
+    vendedor: {
+      id: number;
+      nombre: string;
+    };
   }>;
   finalizadas?: boolean;
+  isAdmin?: boolean;
+  vendedores?: Array<{
+    id: number;
+    nombre: string;
+  }>;
 }) {
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -280,6 +358,9 @@ function CuentaSection({
                 <p className="mt-1 text-sm text-slate-500">
                   Inicio: {cuenta.fechaInicio.toLocaleDateString("es-AR")}
                 </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Vendedor de cuenta: {cuenta.vendedor.nombre}
+                </p>
               </div>
 
               <div>
@@ -295,10 +376,20 @@ function CuentaSection({
                   ${cuenta.saldo.toLocaleString("es-AR")}
                 </p>
               </div>
-
               <div className="md:text-right">
                 <p className="text-sm text-slate-500">Acceso</p>
                 <p className="font-semibold text-slate-900">Ver cuenta →</p>
+
+                {isAdmin && (
+                  <div className="mt-3">
+                    <TransferCreditVendorButton
+                      creditId={cuenta.id}
+                      currentVendorId={cuenta.vendedorId}
+                      currentVendorName={cuenta.vendedor.nombre}
+                      vendedores={vendedores}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </Link>

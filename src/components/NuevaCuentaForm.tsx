@@ -3,6 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+type VendedorOption = {
+  id: number;
+  nombre: string;
+};
+
 function getTodayInputValue() {
   const today = new Date();
   const offset = today.getTimezoneOffset();
@@ -32,11 +37,13 @@ export default function NuevaCuentaForm({
   clienteNombre,
   vendedorId,
   vendedorNombre,
+  vendedores,
 }: {
   clientId: number;
   clienteNombre: string;
   vendedorId: number;
   vendedorNombre: string;
+  vendedores: VendedorOption[];
 }) {
   const router = useRouter();
 
@@ -49,11 +56,21 @@ export default function NuevaCuentaForm({
     frecuenciaDias: "7",
     total: "",
     cantidadCuotas: "",
+    vendedorId: String(vendedorId),
   });
 
   const total = Number(form.total);
   const cantidadCuotas = Number(form.cantidadCuotas);
   const frecuenciaDias = Number(form.frecuenciaDias);
+  const selectedVendedorId = Number(form.vendedorId);
+
+  const vendedorSeleccionado = useMemo(() => {
+    if (!Number.isInteger(selectedVendedorId)) return null;
+
+    return (
+      vendedores.find((vendedor) => vendedor.id === selectedVendedorId) ?? null
+    );
+  }, [selectedVendedorId, vendedores]);
 
   const valorCuota = useMemo(() => {
     if (
@@ -75,10 +92,14 @@ export default function NuevaCuentaForm({
     Number.isInteger(cantidadCuotas) &&
     cantidadCuotas > 0 &&
     Number.isInteger(frecuenciaDias) &&
-    frecuenciaDias > 0;
+    frecuenciaDias > 0 &&
+    vendedorSeleccionado;
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -87,7 +108,7 @@ export default function NuevaCuentaForm({
 
     const payload = {
       clientId,
-      vendedorId,
+      vendedorId: Number(form.vendedorId),
       tipo: form.tipo.trim(),
       fechaInicio: form.fechaInicio,
       frecuenciaDias: Number(form.frecuenciaDias),
@@ -97,6 +118,11 @@ export default function NuevaCuentaForm({
 
     if (!payload.tipo) {
       setError("Ingresá el tipo de cuenta.");
+      return;
+    }
+
+    if (!Number.isInteger(payload.vendedorId)) {
+      setError("Seleccioná un vendedor para esta cuenta.");
       return;
     }
 
@@ -159,7 +185,7 @@ export default function NuevaCuentaForm({
         <p className="mt-1 text-sm text-slate-500">
           Cliente:{" "}
           <span className="font-medium text-slate-700">{clienteNombre}</span> ·
-          Vendedor:{" "}
+          Vendedor principal:{" "}
           <span className="font-medium text-slate-700">{vendedorNombre}</span>
         </p>
       </div>
@@ -202,6 +228,45 @@ export default function NuevaCuentaForm({
 
       <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
         <p className="text-sm font-medium text-slate-700">
+          Vendedor de la cuenta
+        </p>
+
+        <div className="mt-4">
+          <label className="text-sm font-medium text-slate-700">
+            Seleccionar vendedor
+          </label>
+
+          <select
+            name="vendedorId"
+            value={form.vendedorId}
+            onChange={handleChange}
+            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
+          >
+            <option value="">Seleccionar vendedor...</option>
+
+            {vendedores.map((vendedor) => (
+              <option key={vendedor.id} value={vendedor.id}>
+                {vendedor.nombre}
+                {vendedor.id === vendedorId ? " · principal" : ""}
+              </option>
+            ))}
+          </select>
+
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Por defecto se usa el vendedor principal del cliente, pero esta
+            cuenta puede asignarse a otro vendedor activo.
+          </p>
+
+          {vendedores.length === 0 && (
+            <p className="mt-2 text-sm font-medium text-red-600">
+              No hay vendedores activos cargados.
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <p className="text-sm font-medium text-slate-700">
           Condiciones de pago
         </p>
 
@@ -237,67 +302,96 @@ export default function NuevaCuentaForm({
               Valor de cuota calculado
             </p>
 
-            <p className="mt-1 text-3xl font-bold text-white">
+            <p className="mt-1 text-3xl font-bold">
               ${formatCurrency(valorCuota)}
-            </p>
-
-            <p className="mt-2 text-sm text-slate-400">
-              Se calcula automáticamente según total y cantidad de cuotas.
             </p>
           </div>
 
-          <div className="rounded-xl bg-white/10 p-4 ring-1 ring-white/10 md:min-w-56">
-            <p className="text-sm text-slate-300">Vista previa</p>
+          <div className="text-sm text-slate-300 md:text-right">
+            <p>
+              Total:{" "}
+              <span className="font-semibold text-white">
+                {Number.isFinite(total) && total > 0
+                  ? `$${formatCurrency(total)}`
+                  : "-"}
+              </span>
+            </p>
 
-            <div className="mt-2 space-y-1 text-sm">
-              <p>
-                Total:{" "}
-                <span className="font-semibold text-white">
-                  $
-                  {Number.isFinite(total) && total > 0
-                    ? formatCurrency(total)
-                    : "0"}
-                </span>
-              </p>
-
-              <p>
-                Cuotas:{" "}
-                <span className="font-semibold text-white">
-                  {Number.isInteger(cantidadCuotas) && cantidadCuotas > 0
-                    ? cantidadCuotas
-                    : "-"}
-                </span>
-              </p>
-
-              <p>
-                Frecuencia:{" "}
-                <span className="font-semibold text-white">
-                  {Number.isInteger(frecuenciaDias) && frecuenciaDias > 0
-                    ? `${frecuenciaDias} días`
-                    : "-"}
-                </span>
-              </p>
-            </div>
+            <p>
+              Cuotas:{" "}
+              <span className="font-semibold text-white">
+                {Number.isInteger(cantidadCuotas) && cantidadCuotas > 0
+                  ? cantidadCuotas
+                  : "-"}
+              </span>
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">Resumen de carga</p>
+      <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+        <p className="text-sm font-medium text-slate-700">Resumen operativo</p>
 
-        <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           <SummaryItem label="Cliente" value={clienteNombre} />
-          <SummaryItem label="Vendedor" value={vendedorNombre} />
+
+          <SummaryItem
+            label="Vendedor de cuenta"
+            value={vendedorSeleccionado?.nombre ?? "-"}
+          />
+
           <SummaryItem
             label="Fecha inicial"
             value={formatInputDate(form.fechaInicio)}
           />
+
           <SummaryItem
-            label="Estado"
-            value={resumenValido ? "Listo para crear" : "Datos incompletos"}
+            label="Frecuencia"
+            value={
+              Number.isInteger(frecuenciaDias) && frecuenciaDias > 0
+                ? `Cada ${frecuenciaDias} día${frecuenciaDias === 1 ? "" : "s"}`
+                : "-"
+            }
+          />
+
+          <SummaryItem
+            label="Total"
+            value={
+              Number.isFinite(total) && total > 0
+                ? `$${formatCurrency(total)}`
+                : "-"
+            }
+          />
+
+          <SummaryItem
+            label="Cantidad de cuotas"
+            value={
+              Number.isInteger(cantidadCuotas) && cantidadCuotas > 0
+                ? String(cantidadCuotas)
+                : "-"
+            }
           />
         </div>
       </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <p className="text-sm font-medium text-slate-700">Importante</p>
+
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          Esta cuenta quedará asociada al vendedor seleccionado. Si el cliente
+          tiene otras cuentas con otros vendedores, cada vendedor solo verá las
+          cuentas que le correspondan.
+        </p>
+      </div>
+
+      {!resumenValido && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm text-slate-500">
+            Completá los datos principales para ver el resumen completo de la
+            cuenta.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
@@ -307,7 +401,7 @@ export default function NuevaCuentaForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || vendedores.length === 0}
         className="w-full rounded-xl bg-slate-900 py-3 font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? "Creando cuenta..." : "Crear cuenta"}
@@ -325,6 +419,7 @@ function Input({
   return (
     <div>
       <label className="text-sm font-medium text-slate-700">{label}</label>
+
       <input
         {...props}
         className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
@@ -335,9 +430,9 @@ function Input({
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-100">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 font-semibold text-slate-900">{value}</p>
+    <div className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-1 font-semibold text-slate-950">{value}</p>
     </div>
   );
 }

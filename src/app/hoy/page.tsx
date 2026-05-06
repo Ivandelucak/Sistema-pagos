@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getCreditsDueToday, getOverdueCredits } from "@/lib/credits";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
@@ -34,23 +35,59 @@ export default async function HoyPage({
 }: {
   searchParams: Promise<{
     q?: string;
+    vendedorId?: string;
   }>;
 }) {
   const user = await requireUser();
-  const { q } = await searchParams;
+  const { q, vendedorId: vendedorIdParam } = await searchParams;
 
   const search = q?.trim() ?? "";
 
-  const vendedorId = user.rol === "VENDEDOR" ? user.id : undefined;
+  const vendedorIdFromQuery = vendedorIdParam ? Number(vendedorIdParam) : null;
 
-  const vencenHoyBase = await getCreditsDueToday(vendedorId);
-  const vencidosBase = await getOverdueCredits(vendedorId);
+  const vendedorIdFiltro =
+    user.rol === "VENDEDOR"
+      ? user.id
+      : vendedorIdFromQuery !== null &&
+          Number.isInteger(vendedorIdFromQuery) &&
+          vendedorIdFromQuery > 0
+        ? vendedorIdFromQuery
+        : undefined;
+
+  const vendedores =
+    user.rol === "ADMIN"
+      ? await prisma.user.findMany({
+          where: {
+            rol: "VENDEDOR",
+            activo: true,
+          },
+          select: {
+            id: true,
+            nombre: true,
+          },
+          orderBy: {
+            nombre: "asc",
+          },
+        })
+      : [];
+
+  const vendedorSeleccionado =
+    user.rol === "ADMIN" && vendedorIdFiltro
+      ? (vendedores.find((vendedor) => vendedor.id === vendedorIdFiltro) ??
+        null)
+      : null;
+
+  const vencenHoyBase = await getCreditsDueToday(vendedorIdFiltro);
+  const vencidosBase = await getOverdueCredits(vendedorIdFiltro);
 
   const vencenHoy = filterCredits(vencenHoyBase, search);
   const vencidos = filterCredits(vencidosBase, search);
 
   const totalOperativo = vencenHoy.length + vencidos.length;
   const totalBase = vencenHoyBase.length + vencidosBase.length;
+
+  const hasFilters =
+    Boolean(search) || (user.rol === "ADMIN" && Boolean(vendedorIdFiltro));
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
@@ -76,9 +113,26 @@ export default async function HoyPage({
                 <p className="text-sm font-medium text-slate-700">
                   Modo consulta
                 </p>
+
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   Esta vista es para consultar la cartera asignada. Los cobros
                   se registran desde administración.
+                </p>
+              </div>
+            )}
+
+            {user.rol === "ADMIN" && vendedorSeleccionado && (
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p className="text-sm font-medium text-slate-700">
+                  Filtro activo
+                </p>
+
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Mostrando cobros correspondientes a{" "}
+                  <span className="font-semibold text-slate-800">
+                    {vendedorSeleccionado.nombre}
+                  </span>
+                  .
                 </p>
               </div>
             )}
@@ -86,39 +140,69 @@ export default async function HoyPage({
         </div>
 
         <form className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <label className="text-sm font-medium text-slate-700">
-            Buscar cliente
-          </label>
+          <div className="grid gap-3 md:grid-cols-[1fr_220px_auto] md:items-end">
+            <div>
+              <label className="text-sm font-medium text-slate-700">
+                Buscar cliente
+              </label>
 
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <input
-              name="q"
-              defaultValue={search}
-              placeholder="Buscar por nombre, dirección o tipo..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
-            />
+              <input
+                name="q"
+                defaultValue={search}
+                placeholder="Buscar por nombre, dirección o tipo..."
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
+              />
+            </div>
 
-            <button
-              type="submit"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-slate-800 active:scale-[0.98]"
-            >
-              Buscar
-            </button>
+            {user.rol === "ADMIN" && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Clientes de
+                </label>
 
-            {search && (
-              <Link
-                href="/hoy"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-              >
-                Limpiar
-              </Link>
+                <select
+                  name="vendedorId"
+                  defaultValue={vendedorIdFiltro ?? ""}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
+                >
+                  <option value="">Todos</option>
+
+                  {vendedores.map((vendedor) => (
+                    <option key={vendedor.id} value={vendedor.id}>
+                      {vendedor.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
+
+            <div className="flex flex-col gap-2 sm:flex-row md:justify-end">
+              <button
+                type="submit"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-slate-800 active:scale-[0.98]"
+              >
+                Aplicar
+              </button>
+
+              {hasFilters && (
+                <Link
+                  href="/hoy"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  Limpiar
+                </Link>
+              )}
+            </div>
           </div>
 
-          {search && (
+          {hasFilters && (
             <p className="mt-3 text-sm text-slate-500">
               Mostrando {totalOperativo} de {totalBase} cuenta
-              {totalBase === 1 ? "" : "s"} para “{search}”.
+              {totalBase === 1 ? "" : "s"}
+              {vendedorSeleccionado
+                ? ` de ${vendedorSeleccionado.nombre}`
+                : ""}{" "}
+              {search ? `para “${search}”` : ""}.
             </p>
           )}
         </form>
@@ -134,8 +218,8 @@ export default async function HoyPage({
           description="Cuentas que corresponden a la jornada actual."
           credits={vencenHoy}
           emptyText={
-            search
-              ? "No hay pendientes de hoy que coincidan con la búsqueda."
+            search || vendedorSeleccionado
+              ? "No hay pendientes de hoy que coincidan con los filtros."
               : "No hay cuentas que venzan hoy."
           }
           showSeller={user.rol === "ADMIN"}
@@ -147,8 +231,8 @@ export default async function HoyPage({
           description="Cuentas con vencimiento anterior a la fecha actual."
           credits={vencidos}
           emptyText={
-            search
-              ? "No hay vencidos que coincidan con la búsqueda."
+            search || vendedorSeleccionado
+              ? "No hay vencidos que coincidan con los filtros."
               : "No hay cuentas vencidas."
           }
           showSeller={user.rol === "ADMIN"}
@@ -244,6 +328,7 @@ function CreditList({
 
                   <div className="shrink-0 text-right">
                     <p className="text-xs font-medium text-slate-500">Saldo</p>
+
                     <p
                       className={`text-base font-bold ${
                         vencida ? "text-red-600" : "text-slate-950"

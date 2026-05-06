@@ -1,3 +1,5 @@
+//src/app/cuentas/[creditId]/page.tsx
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -7,6 +9,8 @@ import CreditStatusButton from "@/components/CreditStatusButton";
 import EditPaymentButton from "@/components/EditPaymentButton";
 import DeletePaymentButton from "@/components/DeletePaymentButton";
 import BackButton from "@/components/BackButton";
+
+export const dynamic = "force-dynamic";
 
 export default async function CuentaPage({
   params,
@@ -381,6 +385,10 @@ export default async function CuentaPage({
                         <p className="mt-1 text-sm text-slate-500">
                           {pago.fechaPago.toLocaleDateString("es-AR")}
                         </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          Método: {formatPaymentMethod(pago.metodoPago)}
+                        </p>
                       </div>
 
                       <div className="sm:text-right">
@@ -396,6 +404,7 @@ export default async function CuentaPage({
                         <EditPaymentButton
                           paymentId={pago.id}
                           currentAmount={pago.monto}
+                          currentMethod={pago.metodoPago}
                         />
                         <DeletePaymentButton paymentId={pago.id} />
                       </div>
@@ -419,6 +428,10 @@ export default async function CuentaPage({
 
 function formatMoney(value: number) {
   return `$${value.toLocaleString("es-AR")}`;
+}
+
+function formatPaymentMethod(value: string) {
+  return value === "TRANSFERENCIA" ? "Transferencia" : "Efectivo";
 }
 
 function MetricCard({

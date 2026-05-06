@@ -1,4 +1,4 @@
-import BackButton from "@/components/BackButton";
+import Link from "next/link";
 import NuevaCuentaForm from "@/components/NuevaCuentaForm";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,100 +14,100 @@ export default async function NuevaCuentaPage({
   const id = Number(clientId);
 
   if (!Number.isInteger(id)) {
-    return <StateMessage title="Cliente inválido" />;
+    return <div className="p-8">Cliente inválido</div>;
   }
 
   const cliente = await prisma.client.findUnique({
-    where: { id },
-    include: {
-      vendedor: true,
-      credits: {
-        where: {
-          activo: true,
-          saldo: {
-            gt: 0,
-          },
+    where: {
+      id,
+    },
+    select: {
+      id: true,
+      nombre: true,
+      vendedorId: true,
+      vendedor: {
+        select: {
+          id: true,
+          nombre: true,
         },
       },
     },
   });
 
   if (!cliente) {
-    return <StateMessage title="Cliente no encontrado" />;
+    return <div className="p-8">Cliente no encontrado</div>;
   }
 
-  if (!cliente.activo) {
-    return (
-      <StateMessage title="No se puede crear una cuenta para un cliente dado de baja" />
-    );
-  }
-
-  const saldoPendiente = cliente.credits.reduce(
-    (acc, cuenta) => acc + cuenta.saldo,
-    0,
-  );
+  const vendedores = await prisma.user.findMany({
+    where: {
+      rol: "VENDEDOR",
+      activo: true,
+    },
+    select: {
+      id: true,
+      nombre: true,
+    },
+    orderBy: {
+      nombre: "asc",
+    },
+  });
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-6 md:p-8">
       <section className="mx-auto max-w-5xl space-y-6">
         <div>
-          <BackButton />
+          <Link
+            href={`/clientes/${cliente.id}`}
+            className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+          >
+            ← Volver al cliente
+          </Link>
 
-          <div className="mt-4">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-              Nueva cuenta
-            </h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-950">
+            Nueva cuenta
+          </h1>
 
-            <p className="mt-2 max-w-2xl text-slate-600">
-              Cargá una nueva cuenta para el cliente seleccionado. La asignación
-              al vendedor se toma automáticamente desde la ficha del cliente.
-            </p>
-          </div>
+          <p className="mt-2 max-w-2xl text-slate-600">
+            Cargá una nueva cuenta para este cliente. Podés asignarla al
+            vendedor principal o a otro vendedor activo.
+          </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <SummaryCard title="Cliente" value={cliente.nombre} />
-          <SummaryCard title="Vendedor" value={cliente.vendedor.nombre} />
-          <SummaryCard
-            title="Cuentas activas"
-            value={String(cliente.credits.length)}
-            description={`Saldo pendiente: $${saldoPendiente.toLocaleString(
-              "es-AR",
-            )}`}
-          />
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.4fr]">
           <aside className="space-y-4">
             <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold text-slate-950">
-                Asignación
+                Cliente seleccionado
               </h2>
 
               <div className="mt-4 space-y-3">
                 <Info label="Cliente" value={cliente.nombre} />
                 <Info
-                  label="Vendedor asignado"
+                  label="Vendedor principal"
                   value={cliente.vendedor.nombre}
                 />
               </div>
-
-              <p className="mt-4 text-sm leading-6 text-slate-500">
-                La nueva cuenta se guardará con el mismo vendedor del cliente.
-                Si el vendedor no corresponde, primero hay que reasignar el
-                cliente antes de crear la cuenta.
-              </p>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-900 p-5 text-white shadow-sm">
               <p className="text-sm font-medium text-slate-300">
-                Criterio de carga
+                Cuentas por vendedor
               </p>
 
               <p className="mt-2 text-sm leading-6 text-slate-100">
-                El sistema calcula el valor de cuota dividiendo el total por la
-                cantidad de cuotas. Los vencimientos se proyectan desde la fecha
-                inicial según la frecuencia indicada.
+                El cliente puede tener varias cuentas y cada cuenta puede estar
+                asignada a un vendedor distinto. El vendedor solo verá las
+                cuentas que le correspondan.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+              <p className="text-sm font-medium text-slate-500">
+                Vendedores disponibles
+              </p>
+
+              <p className="mt-2 text-2xl font-bold text-slate-950">
+                {vendedores.length}
               </p>
             </div>
           </aside>
@@ -118,32 +118,12 @@ export default async function NuevaCuentaPage({
               clienteNombre={cliente.nombre}
               vendedorId={cliente.vendedorId}
               vendedorNombre={cliente.vendedor.nombre}
+              vendedores={vendedores}
             />
           </div>
         </div>
       </section>
     </main>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  description,
-}: {
-  title: string;
-  value: string;
-  description?: string;
-}) {
-  return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <p className="text-sm font-medium text-slate-500">{title}</p>
-      <p className="mt-2 text-lg font-bold text-slate-950">{value}</p>
-
-      {description && (
-        <p className="mt-1 text-sm text-slate-500">{description}</p>
-      )}
-    </div>
   );
 }
 
@@ -153,15 +133,5 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className="mt-1 font-semibold text-slate-950">{value}</p>
     </div>
-  );
-}
-
-function StateMessage({ title }: { title: string }) {
-  return (
-    <main className="min-h-screen bg-slate-100 p-8">
-      <div className="mx-auto max-w-xl rounded-2xl bg-white p-6 text-slate-900 shadow-sm ring-1 ring-slate-200">
-        {title}
-      </div>
-    </main>
   );
 }

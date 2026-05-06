@@ -46,7 +46,6 @@ export async function POST(req: Request) {
       where: { id: clientId },
       select: {
         id: true,
-        vendedorId: true,
         activo: true,
       },
     });
@@ -58,12 +57,20 @@ export async function POST(req: Request) {
       );
     }
 
-    if (cliente.vendedorId !== vendedorId) {
+    const vendedor = await prisma.user.findFirst({
+      where: {
+        id: vendedorId,
+        rol: "VENDEDOR",
+        activo: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!vendedor) {
       return NextResponse.json(
-        {
-          error:
-            "El vendedor de la cuenta debe coincidir con el vendedor asignado al cliente",
-        },
+        { error: "El vendedor seleccionado no existe o no está activo" },
         { status: 400 },
       );
     }

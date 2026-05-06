@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+type MetodoPago = "EFECTIVO" | "TRANSFERENCIA";
+
 function getTodayInputValue() {
   const today = new Date();
   const offset = today.getTimezoneOffset();
@@ -27,6 +29,10 @@ function formatInputDate(value: string) {
   return new Date(year, month - 1, day).toLocaleDateString("es-AR");
 }
 
+function formatMetodoPago(value: MetodoPago) {
+  return value === "EFECTIVO" ? "Efectivo" : "Transferencia";
+}
+
 export default function RegistrarCobroButton({
   creditId,
   saldo,
@@ -41,6 +47,7 @@ export default function RegistrarCobroButton({
   const [open, setOpen] = useState(false);
   const [monto, setMonto] = useState("");
   const [fechaPago, setFechaPago] = useState(getTodayInputValue());
+  const [metodoPago, setMetodoPago] = useState<MetodoPago>("EFECTIVO");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,7 +60,6 @@ export default function RegistrarCobroButton({
   }, [parsedMonto, saldo]);
 
   const excedeSaldo = Number.isFinite(parsedMonto) && parsedMonto > saldo;
-
   const pagoCompleto = Number.isFinite(parsedMonto) && parsedMonto === saldo;
 
   const pagoParcial =
@@ -73,6 +79,7 @@ export default function RegistrarCobroButton({
     setError("");
     setMonto("");
     setFechaPago(getTodayInputValue());
+    setMetodoPago("EFECTIVO");
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -106,6 +113,7 @@ export default function RegistrarCobroButton({
         creditId,
         monto: parsedMonto,
         fechaPago,
+        metodoPago,
       }),
     });
 
@@ -121,6 +129,7 @@ export default function RegistrarCobroButton({
     setOpen(false);
     setMonto("");
     setFechaPago(getTodayInputValue());
+    setMetodoPago("EFECTIVO");
 
     router.refresh();
   }
@@ -193,6 +202,7 @@ export default function RegistrarCobroButton({
                       className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
                       placeholder="Ej: 10000"
                     />
+
                     {cuotaReferencia && (
                       <button
                         type="button"
@@ -218,6 +228,26 @@ export default function RegistrarCobroButton({
                       onChange={(e) => setFechaPago(e.target.value)}
                       type="date"
                       className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-sm font-medium text-slate-700">
+                    Método de pago
+                  </p>
+
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <PaymentMethodButton
+                      label="Efectivo"
+                      active={metodoPago === "EFECTIVO"}
+                      onClick={() => setMetodoPago("EFECTIVO")}
+                    />
+
+                    <PaymentMethodButton
+                      label="Transferencia"
+                      active={metodoPago === "TRANSFERENCIA"}
+                      onClick={() => setMetodoPago("TRANSFERENCIA")}
                     />
                   </div>
                 </div>
@@ -256,6 +286,13 @@ export default function RegistrarCobroButton({
                           : "El monto no cubre una cuota completa."}
                       </p>
                     )}
+
+                  <p>
+                    Método seleccionado:{" "}
+                    <span className="font-semibold text-slate-900">
+                      {formatMetodoPago(metodoPago)}
+                    </span>
+                  </p>
                 </div>
               </div>
 
@@ -288,6 +325,30 @@ export default function RegistrarCobroButton({
         </div>
       )}
     </>
+  );
+}
+
+function PaymentMethodButton({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+        active
+          ? "bg-slate-900 text-white shadow-sm"
+          : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

@@ -57,11 +57,26 @@ export async function getOverdueCredits(vendedorId?: number) {
 export async function getClientsBySeller(vendedorId: number) {
   return prisma.client.findMany({
     where: {
-      vendedorId,
       activo: true,
+      OR: [
+        {
+          vendedorId,
+        },
+        {
+          credits: {
+            some: {
+              vendedorId,
+            },
+          },
+        },
+      ],
     },
     include: {
-      credits: true,
+      credits: {
+        where: {
+          vendedorId,
+        },
+      },
       vendedor: true,
     },
     orderBy: {

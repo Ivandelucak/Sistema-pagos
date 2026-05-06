@@ -728,6 +728,8 @@ export const ClientScalarFieldEnum = {
   nombre: 'nombre',
   telefono: 'telefono',
   direccion: 'direccion',
+  observacion: 'observacion',
+  observacionTipo: 'observacionTipo',
   activo: 'activo',
   vendedorId: 'vendedorId',
   createdAt: 'createdAt'
@@ -764,6 +766,7 @@ export const PaymentScalarFieldEnum = {
   creditId: 'creditId',
   monto: 'monto',
   fechaPago: 'fechaPago',
+  metodoPago: 'metodoPago',
   registradoPor: 'registradoPor',
   createdAt: 'createdAt'
 } as const
@@ -799,7 +802,8 @@ export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 export const ClientOrderByRelevanceFieldEnum = {
   nombre: 'nombre',
   telefono: 'telefono',
-  direccion: 'direccion'
+  direccion: 'direccion',
+  observacion: 'observacion'
 } as const
 
 export type ClientOrderByRelevanceFieldEnum = (typeof ClientOrderByRelevanceFieldEnum)[keyof typeof ClientOrderByRelevanceFieldEnum]
@@ -855,9 +859,23 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
 
 
 /**
+ * Reference to a field of type 'ClientObservationType'
+ */
+export type EnumClientObservationTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ClientObservationType'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'PaymentMethod'
+ */
+export type EnumPaymentMethodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PaymentMethod'>
     
 
 /**

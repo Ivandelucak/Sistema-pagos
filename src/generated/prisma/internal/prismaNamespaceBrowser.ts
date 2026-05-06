@@ -91,6 +91,8 @@ export const ClientScalarFieldEnum = {
   nombre: 'nombre',
   telefono: 'telefono',
   direccion: 'direccion',
+  observacion: 'observacion',
+  observacionTipo: 'observacionTipo',
   activo: 'activo',
   vendedorId: 'vendedorId',
   createdAt: 'createdAt'
@@ -127,6 +129,7 @@ export const PaymentScalarFieldEnum = {
   creditId: 'creditId',
   monto: 'monto',
   fechaPago: 'fechaPago',
+  metodoPago: 'metodoPago',
   registradoPor: 'registradoPor',
   createdAt: 'createdAt'
 } as const
@@ -162,7 +165,8 @@ export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 export const ClientOrderByRelevanceFieldEnum = {
   nombre: 'nombre',
   telefono: 'telefono',
-  direccion: 'direccion'
+  direccion: 'direccion',
+  observacion: 'observacion'
 } as const
 
 export type ClientOrderByRelevanceFieldEnum = (typeof ClientOrderByRelevanceFieldEnum)[keyof typeof ClientOrderByRelevanceFieldEnum]

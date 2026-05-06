@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { registerPayment } from "@/lib/payments";
+import { registerPayment, type PaymentMethodValue } from "@/lib/payments";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -13,6 +13,18 @@ function parseInputDate(value: unknown) {
   return new Date(year, month - 1, day);
 }
 
+function parseMetodoPago(value: unknown): PaymentMethodValue | null {
+  const metodo = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  if (metodo === "EFECTIVO" || metodo === "TRANSFERENCIA") {
+    return metodo;
+  }
+
+  return null;
+}
+
 export async function POST(req: Request) {
   try {
     const user = await requireAdmin();
@@ -22,6 +34,7 @@ export async function POST(req: Request) {
     const creditId = Number(body.creditId);
     const monto = Number(body.monto);
     const fechaPago = parseInputDate(body.fechaPago);
+    const metodoPago = parseMetodoPago(body.metodoPago);
 
     if (!Number.isInteger(creditId)) {
       return NextResponse.json({ error: "Cuenta inválida" }, { status: 400 });
@@ -38,10 +51,15 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!metodoPago) {
+      return NextResponse.json(
+        { error: "Método de pago inválido" },
+        { status: 400 },
+      );
+    }
+
     const credito = await prisma.credit.findUnique({
-      where: {
-        id: creditId,
-      },
+      where: { id: creditId },
       select: {
         id: true,
         saldo: true,
@@ -82,6 +100,7 @@ export async function POST(req: Request) {
       monto,
       userId: user.id,
       fechaPago,
+      metodoPago,
     });
 
     return NextResponse.json({ ok: true });

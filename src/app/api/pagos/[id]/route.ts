@@ -3,6 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { recalculateCredit } from "@/lib/recalculate-credit";
 import { requireAdmin } from "@/lib/auth";
 
+type MetodoPago = "EFECTIVO" | "TRANSFERENCIA";
+
+function parseMetodoPago(value: unknown): MetodoPago | null {
+  const metodo = String(value ?? "")
+    .trim()
+    .toUpperCase();
+
+  if (metodo === "EFECTIVO" || metodo === "TRANSFERENCIA") {
+    return metodo;
+  }
+
+  return null;
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -58,6 +72,7 @@ export async function PATCH(
 
     const body = await req.json();
     const monto = Number(body.monto);
+    const metodoPago = parseMetodoPago(body.metodoPago);
 
     if (!Number.isInteger(paymentId)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
@@ -65,6 +80,13 @@ export async function PATCH(
 
     if (!Number.isFinite(monto) || monto <= 0) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
+    }
+
+    if (!metodoPago) {
+      return NextResponse.json(
+        { error: "Método de pago inválido" },
+        { status: 400 },
+      );
     }
 
     const payment = await prisma.payment.findUnique({
@@ -107,7 +129,10 @@ export async function PATCH(
 
     await prisma.payment.update({
       where: { id: paymentId },
-      data: { monto },
+      data: {
+        monto,
+        metodoPago,
+      },
     });
 
     await recalculateCredit(payment.creditId);

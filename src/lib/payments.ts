@@ -1,16 +1,20 @@
 import { prisma } from "./prisma";
 import { calculateCreditTracking } from "./credit-calculations";
 
+export type PaymentMethodValue = "EFECTIVO" | "TRANSFERENCIA";
+
 export async function registerPayment({
   creditId,
   monto,
   userId,
   fechaPago,
+  metodoPago,
 }: {
   creditId: number;
   monto: number;
   userId: number;
   fechaPago: Date;
+  metodoPago: PaymentMethodValue;
 }) {
   if (!Number.isFinite(monto) || monto <= 0) {
     throw new Error("El monto debe ser mayor a 0");
@@ -18,6 +22,10 @@ export async function registerPayment({
 
   if (Number.isNaN(fechaPago.getTime())) {
     throw new Error("La fecha del pago es inválida");
+  }
+
+  if (metodoPago !== "EFECTIVO" && metodoPago !== "TRANSFERENCIA") {
+    throw new Error("Método de pago inválido");
   }
 
   return prisma.$transaction(async (tx) => {
@@ -62,6 +70,7 @@ export async function registerPayment({
         creditId,
         monto,
         fechaPago,
+        metodoPago,
         registradoPor: userId,
       },
     });
