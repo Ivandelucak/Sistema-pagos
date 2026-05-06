@@ -20,6 +20,8 @@ model User {
   payments Payment[]
 
   createdAt DateTime @default(now())
+
+  @@map("user")
 }
 
 model Client {
@@ -37,6 +39,8 @@ model Client {
   credits Credit[]
 
   createdAt DateTime @default(now())
+
+  @@map("client")
 }
 
 model Credit {
@@ -67,6 +71,8 @@ model Credit {
   payments Payment[]
 
   createdAt DateTime @default(now())
+
+   @@map("credit")
 }
 
 model Payment {
@@ -82,6 +88,8 @@ model Payment {
   credit Credit @relation(fields: [creditId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@map("payment")
 }
 
 enum PaymentMethod {
