@@ -53,8 +53,8 @@ export default async function NuevoUsuarioPage() {
 
               <p className="mt-2 text-sm leading-6 text-slate-100">
                 Para vendedores nuevos, usá un email interno simple. Ejemplo:
-                nico.cobrador@sistema.local. Luego se puede cambiar la clave si
-                hace falta.
+                nico.cobrador@credifer. Luego se puede cambiar la clave si hace
+                falta.
               </p>
             </div>
           </aside>

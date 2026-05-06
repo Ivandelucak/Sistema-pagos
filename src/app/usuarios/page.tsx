@@ -5,7 +5,7 @@ import UserStatusButton from "@/components/UserStatusButton";
 import ChangeUserPasswordButton from "@/components/ChangeUserPasswordButton";
 import DeleteUserButton from "@/components/DeleteUserButton";
 
-const ROOT_ADMIN_EMAIL = "ivan.admin@sistema.local";
+const ROOT_ADMIN_EMAIL = "ivan.admin@credifer";
 
 type EstadoFiltro = "activos" | "inactivos" | "todos";
 

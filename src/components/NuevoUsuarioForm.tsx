@@ -129,7 +129,7 @@ export default function NuevoUsuarioForm() {
             type="email"
             value={form.email}
             onChange={handleChange}
-            placeholder="Ej: nico.cobrador@sistema.local"
+            placeholder="Ej: nico.cobrador@credifer"
             autoComplete="username"
           />
 

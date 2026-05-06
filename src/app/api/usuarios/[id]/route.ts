@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
 
-const ROOT_ADMIN_EMAIL = "ivan.admin@sistema.local";
+const ROOT_ADMIN_EMAIL = "ivan.admin@credifer";
 
 export async function PATCH(
   req: Request,

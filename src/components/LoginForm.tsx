@@ -61,7 +61,7 @@ export default function LoginForm() {
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        placeholder="usuario@sistema.local"
+        placeholder="usuario@credifer"
         autoComplete="username"
       />
 

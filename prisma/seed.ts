@@ -19,7 +19,7 @@ async function main() {
   const daniPassword = await bcrypt.hash("dani123", 10);
 
   const ivanAdmin = await prisma.user.upsert({
-    where: { email: "ivan.admin@sistema.local" },
+    where: { email: "ivan.admin@credifer" },
     update: {
       password: adminPassword,
       rol: "ADMIN",
@@ -27,7 +27,7 @@ async function main() {
     },
     create: {
       nombre: "Ivan Admin",
-      email: "ivan.admin@sistema.local",
+      email: "ivan.admin@credifer",
       password: adminPassword,
       rol: "ADMIN",
       activo: true,
@@ -35,7 +35,7 @@ async function main() {
   });
 
   const daniAdmin = await prisma.user.upsert({
-    where: { email: "dani.admin@sistema.local" },
+    where: { email: "dani.admin@credifer" },
     update: {
       password: adminPassword,
       rol: "ADMIN",
@@ -43,7 +43,7 @@ async function main() {
     },
     create: {
       nombre: "Dani Admin",
-      email: "dani.admin@sistema.local",
+      email: "dani.admin@credifer",
       password: adminPassword,
       rol: "ADMIN",
       activo: true,
@@ -51,7 +51,7 @@ async function main() {
   });
 
   const dani = await prisma.user.upsert({
-    where: { email: "dani.cobrador@sistema.local" },
+    where: { email: "dani.cobrador@credifer" },
     update: {
       nombre: "Dani",
       password: daniPassword,
@@ -60,7 +60,7 @@ async function main() {
     },
     create: {
       nombre: "Dani",
-      email: "dani.cobrador@sistema.local",
+      email: "dani.cobrador@credifer",
       password: daniPassword,
       rol: "VENDEDOR",
       activo: true,

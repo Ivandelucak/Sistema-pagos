@@ -85,27 +85,27 @@ const VENDORS: Record<
 > = {
   Dani: {
     nombre: "Dani",
-    email: "dani.cobrador@sistema.local",
+    email: "dani.cobrador@credifer",
     defaultPassword: "dani123",
   },
   Nico: {
     nombre: "Nico",
-    email: "nico.cobrador@sistema.local",
+    email: "nico.cobrador@credifer",
     defaultPassword: "nico123",
   },
   Violeta: {
     nombre: "Violeta",
-    email: "violeta.cobrador@sistema.local",
+    email: "violeta.cobrador@credifer",
     defaultPassword: "violeta123",
   },
   Paola: {
     nombre: "Paola",
-    email: "paola.cobrador@sistema.local",
+    email: "paola.cobrador@credifer",
     defaultPassword: "paola123",
   },
   Gustavo: {
     nombre: "Gustavo",
-    email: "gustavo.cobrador@sistema.local",
+    email: "gustavo.cobrador@credifer",
     defaultPassword: "gustavo123",
   },
 };
@@ -429,7 +429,7 @@ async function ensureUsers() {
 
   const admin = await prisma.user.upsert({
     where: {
-      email: "ivan.admin@sistema.local",
+      email: "ivan.admin@credifer",
     },
     update: {
       nombre: "Ivan Admin",
@@ -438,7 +438,7 @@ async function ensureUsers() {
     },
     create: {
       nombre: "Ivan Admin",
-      email: "ivan.admin@sistema.local",
+      email: "ivan.admin@credifer",
       password: adminPassword,
       rol: "ADMIN",
       activo: true,
