@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ConditionalAppShell from "@/components/ConditionalAppShell";
+import RegisterServiceWorker from "@/components/RegisterServiceWorker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -66,6 +67,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <RegisterServiceWorker />
         <ConditionalAppShell>{children}</ConditionalAppShell>
       </body>
     </html>
