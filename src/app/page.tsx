@@ -1,5 +1,3 @@
-//src/app/page.tsx
-
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -8,6 +6,29 @@ import { calculateCreditTracking } from "@/lib/credit-calculations";
 import HomeSearchFilter from "@/components/HomeSearchFilter";
 
 type HomeSort = "az" | "za" | "dueAsc" | "dueDesc";
+
+function normalizeText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function matchesSearch({
+  search,
+  fields,
+}: {
+  search: string;
+  fields: Array<string | null | undefined>;
+}) {
+  const query = normalizeText(search);
+
+  if (!query) return true;
+
+  return fields.some((field) => normalizeText(field ?? "").includes(query));
+}
 
 export default async function Home({
   searchParams,
@@ -31,7 +52,14 @@ export default async function Home({
   const sort: HomeSort =
     order === "za" || order === "dueAsc" || order === "dueDesc" ? order : "az";
 
-  const vendedorId = vendedorIdParam ? Number(vendedorIdParam) : undefined;
+  const vendedorIdFromQuery = vendedorIdParam ? Number(vendedorIdParam) : null;
+
+  const vendedorId =
+    vendedorIdFromQuery !== null &&
+    Number.isInteger(vendedorIdFromQuery) &&
+    vendedorIdFromQuery > 0
+      ? vendedorIdFromQuery
+      : undefined;
 
   const vendedores = await prisma.user.findMany({
     where: {
@@ -43,20 +71,11 @@ export default async function Home({
     },
   });
 
-  const creditos = await prisma.credit.findMany({
+  const creditosBase = await prisma.credit.findMany({
     where: {
       activo: true,
       saldo: { gt: 0 },
       ...(Number.isInteger(vendedorId) ? { vendedorId } : {}),
-      ...(search
-        ? {
-            client: {
-              nombre: {
-                contains: search,
-              },
-            },
-          }
-        : {}),
     },
     include: {
       client: true,
@@ -64,19 +83,34 @@ export default async function Home({
     },
   });
 
-  const cuentas = creditos.map((c) => {
+  const creditos = search
+    ? creditosBase.filter((credito) =>
+        matchesSearch({
+          search,
+          fields: [
+            credito.client.nombre,
+            credito.client.telefono,
+            credito.client.direccion,
+            credito.tipo,
+            credito.vendedor.nombre,
+          ],
+        }),
+      )
+    : creditosBase;
+
+  const cuentas = creditos.map((credito) => {
     const tracking = calculateCreditTracking({
-      fechaInicio: c.fechaInicio,
-      frecuenciaDias: c.frecuenciaDias,
-      valorCuota: c.valorCuota,
-      total: c.total,
-      montoPagado: c.montoPagado,
+      fechaInicio: credito.fechaInicio,
+      frecuenciaDias: credito.frecuenciaDias,
+      valorCuota: credito.valorCuota,
+      total: credito.total,
+      montoPagado: credito.montoPagado,
     });
 
-    return { ...c, tracking };
+    return { ...credito, tracking };
   });
 
-  const cuentasOrdenadas = cuentas.sort((a, b) => {
+  const cuentasOrdenadas = [...cuentas].sort((a, b) => {
     if (sort === "az") {
       return a.client.nombre.localeCompare(b.client.nombre, "es", {
         sensitivity: "base",
@@ -97,12 +131,15 @@ export default async function Home({
   });
 
   const vencenHoy = cuentas.filter(
-    (c) => c.tracking.diasParaVencer === 0,
+    (cuenta) => cuenta.tracking.diasParaVencer === 0,
   ).length;
 
-  const vencidas = cuentas.filter((c) => c.tracking.diasParaVencer < 0).length;
+  const vencidas = cuentas.filter(
+    (cuenta) => cuenta.tracking.diasParaVencer < 0,
+  ).length;
 
-  const clientesActivos = new Set(cuentas.map((c) => c.client.id)).size;
+  const clientesActivos = new Set(cuentas.map((cuenta) => cuenta.client.id))
+    .size;
 
   const cuentasInactivas = await prisma.credit.count({
     where: {
@@ -117,9 +154,11 @@ export default async function Home({
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-950">Inicio</h1>
+
             <p className="mt-2 text-slate-600">
               Panel administrativo de cuentas pendientes.
             </p>
+
             <p className="mt-1 text-sm text-slate-500">
               Sesión: {user.nombre} · {user.rol}
             </p>
@@ -166,14 +205,14 @@ export default async function Home({
           </div>
 
           <div className="mt-5 space-y-3">
-            {cuentasOrdenadas.map((c) => {
-              const vencida = c.tracking.diasParaVencer < 0;
-              const venceHoy = c.tracking.diasParaVencer === 0;
+            {cuentasOrdenadas.map((cuenta) => {
+              const vencida = cuenta.tracking.diasParaVencer < 0;
+              const venceHoy = cuenta.tracking.diasParaVencer === 0;
 
               return (
                 <Link
-                  key={c.id}
-                  href={`/cuentas/${c.id}`}
+                  key={cuenta.id}
+                  href={`/cuentas/${cuenta.id}`}
                   className={`group block rounded-2xl border bg-white p-4 shadow-sm ring-1 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] ${
                     vencida
                       ? "border-red-200 border-l-4 border-l-red-500 ring-red-100 hover:border-red-300"
@@ -185,10 +224,10 @@ export default async function Home({
                   <div className="grid gap-3 md:grid-cols-5 md:items-center">
                     <div>
                       <p className="font-semibold text-slate-950 transition-colors group-hover:text-slate-700">
-                        {c.client.nombre}
+                        {cuenta.client.nombre}
                       </p>
 
-                      <p className="text-sm text-slate-500">{c.tipo}</p>
+                      <p className="text-sm text-slate-500">{cuenta.tipo}</p>
 
                       <span
                         className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -210,14 +249,14 @@ export default async function Home({
                     <div>
                       <p className="text-sm text-slate-500">Vendedor</p>
                       <p className="font-semibold text-slate-900">
-                        {c.vendedor.nombre}
+                        {cuenta.vendedor.nombre}
                       </p>
                     </div>
 
                     <div>
                       <p className="text-sm text-slate-500">Vence</p>
                       <p className="font-semibold text-slate-900">
-                        {c.tracking.proximoVencimiento.toLocaleDateString(
+                        {cuenta.tracking.proximoVencimiento.toLocaleDateString(
                           "es-AR",
                         )}
                       </p>
@@ -230,7 +269,7 @@ export default async function Home({
                           vencida ? "text-red-600" : "text-slate-900"
                         }`}
                       >
-                        {c.tracking.diasParaVencer}
+                        {cuenta.tracking.diasParaVencer}
                       </p>
                     </div>
 
@@ -241,7 +280,7 @@ export default async function Home({
                           vencida ? "text-red-600" : "text-slate-900"
                         }`}
                       >
-                        ${c.tracking.saldo.toLocaleString("es-AR")}
+                        ${cuenta.tracking.saldo.toLocaleString("es-AR")}
                       </p>
                     </div>
                   </div>
@@ -251,7 +290,9 @@ export default async function Home({
 
             {cuentasOrdenadas.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                No hay cuentas pendientes.
+                {search
+                  ? "No hay cuentas pendientes que coincidan con la búsqueda."
+                  : "No hay cuentas pendientes."}
               </div>
             )}
           </div>
@@ -273,6 +314,7 @@ function SummaryCard({
   return (
     <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <p className="text-sm font-medium text-slate-500">{title}</p>
+
       <p
         className={`mt-2 text-2xl font-bold ${
           danger ? "text-red-600" : "text-slate-950"

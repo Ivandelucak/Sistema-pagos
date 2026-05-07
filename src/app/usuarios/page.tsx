@@ -1,3 +1,5 @@
+// src/app/usuarios/page.tsx
+
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";

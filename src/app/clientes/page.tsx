@@ -1,8 +1,29 @@
-//src/app/clientes/page.tsx
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+
+function normalizeText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function matchesSearch({
+  search,
+  fields,
+}: {
+  search: string;
+  fields: Array<string | null | undefined>;
+}) {
+  const query = normalizeText(search);
+
+  if (!query) return true;
+
+  return fields.some((field) => normalizeText(field ?? "").includes(query));
+}
 
 export default async function ClientesPage({
   searchParams,
@@ -17,14 +38,14 @@ export default async function ClientesPage({
 
   const search = q?.trim() ?? "";
 
-  const vendedorIdFromQuery = vendedorIdParam
-    ? Number(vendedorIdParam)
-    : undefined;
+  const vendedorIdFromQuery = vendedorIdParam ? Number(vendedorIdParam) : null;
 
   const vendedorId =
     user.rol === "VENDEDOR"
       ? user.id
-      : Number.isInteger(vendedorIdFromQuery)
+      : vendedorIdFromQuery !== null &&
+          Number.isInteger(vendedorIdFromQuery) &&
+          vendedorIdFromQuery > 0
         ? vendedorIdFromQuery
         : undefined;
 
@@ -43,19 +64,12 @@ export default async function ClientesPage({
 
   const vendedorSeleccionado =
     user.rol === "ADMIN" && Number.isInteger(vendedorId)
-      ? vendedores.find((vendedor) => vendedor.id === vendedorId)
+      ? (vendedores.find((vendedor) => vendedor.id === vendedorId) ?? null)
       : null;
 
-  const clientes = await prisma.client.findMany({
+  const clientesBase = await prisma.client.findMany({
     where: {
       activo: true,
-      ...(search
-        ? {
-            nombre: {
-              contains: search,
-            },
-          }
-        : {}),
       ...(Number.isInteger(vendedorId)
         ? {
             OR: [
@@ -85,6 +99,22 @@ export default async function ClientesPage({
       nombre: "asc",
     },
   });
+
+  const clientes = search
+    ? clientesBase.filter((cliente) =>
+        matchesSearch({
+          search,
+          fields: [
+            cliente.nombre,
+            cliente.telefono,
+            cliente.direccion,
+            cliente.vendedor.nombre,
+            ...cliente.credits.map((cuenta) => cuenta.tipo),
+            ...cliente.credits.map((cuenta) => cuenta.vendedor.nombre),
+          ],
+        }),
+      )
+    : clientesBase;
 
   const getVisibleCredits = (cliente: (typeof clientes)[number]) => {
     if (Number.isInteger(vendedorId)) {
@@ -126,7 +156,7 @@ export default async function ClientesPage({
 
           {user.rol === "ADMIN" && (
             <Link
-              href="/clientes/nuevo?from=/"
+              href="/clientes/nuevo?from=/clientes"
               className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:scale-[0.98]"
             >
               Nuevo cliente
@@ -136,10 +166,12 @@ export default async function ClientesPage({
 
         <div className="grid gap-4 md:grid-cols-3">
           <SummaryCard title="Clientes visibles" value={clientes.length} />
+
           <SummaryCard
             title="Con cuenta activa"
             value={clientesConCuentaActiva}
           />
+
           <SummaryCard
             title="Sin cuenta activa"
             value={clientesSinCuentaActiva}
@@ -173,6 +205,7 @@ export default async function ClientesPage({
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
                 >
                   <option value="">Todos los vendedores</option>
+
                   {vendedores.map((vendedor) => (
                     <option key={vendedor.id} value={vendedor.id}>
                       {vendedor.nombre}
@@ -305,7 +338,9 @@ export default async function ClientesPage({
 
             {clientes.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-                No se encontraron clientes.
+                {search
+                  ? "No se encontraron clientes que coincidan con la búsqueda."
+                  : "No se encontraron clientes."}
               </div>
             )}
           </div>
