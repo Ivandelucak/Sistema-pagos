@@ -1,4 +1,3 @@
-//src/app/clientes/nuevo/page.tsx
 import Link from "next/link";
 import NuevoClienteForm from "@/components/NuevoClienteForm";
 import { requireAdmin } from "@/lib/auth";
@@ -11,8 +10,6 @@ export default async function NuevoClientePage({
     from?: string;
   }>;
 }) {
-  await requireAdmin();
-
   const vendedores = await prisma.user.findMany({
     where: {
       rol: "VENDEDOR",

@@ -1,5 +1,3 @@
-//src/app/hoy/page.tsx
-
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";

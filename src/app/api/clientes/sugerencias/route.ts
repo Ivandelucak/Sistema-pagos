@@ -1,5 +1,3 @@
-//src/app/api/clientes/sugerencias/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
@@ -24,11 +22,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ clientes: [] });
     }
 
-    const normalizedQuery = normalizeText(q);
-
     const clientes = await prisma.client.findMany({
       where: {
         activo: true,
+        nombre: {
+          contains: q,
+        },
       },
       select: {
         id: true,
@@ -51,42 +50,23 @@ export async function GET(req: Request) {
       orderBy: {
         nombre: "asc",
       },
-      take: 1500,
+      take: 8,
     });
 
-    const filtered = clientes
-      .filter((cliente) => {
-        const fields = [
-          cliente.nombre,
-          cliente.telefono ?? "",
-          cliente.direccion ?? "",
-          cliente.vendedor.nombre,
-        ];
+    const normalizedQuery = normalizeText(q);
 
-        return fields.some((field) =>
-          normalizeText(field).includes(normalizedQuery),
-        );
-      })
-      .sort((a, b) => {
-        const aName = normalizeText(a.nombre);
-        const bName = normalizeText(b.nombre);
+    const sorted = clientes.sort((a, b) => {
+      const aName = normalizeText(a.nombre);
+      const bName = normalizeText(b.nombre);
 
-        const aExact = aName === normalizedQuery ? 0 : 1;
-        const bExact = bName === normalizedQuery ? 0 : 1;
+      const aExact = aName === normalizedQuery ? 0 : 1;
+      const bExact = bName === normalizedQuery ? 0 : 1;
 
-        if (aExact !== bExact) return aExact - bExact;
-
-        const aStarts = aName.startsWith(normalizedQuery) ? 0 : 1;
-        const bStarts = bName.startsWith(normalizedQuery) ? 0 : 1;
-
-        if (aStarts !== bStarts) return aStarts - bStarts;
-
-        return aName.localeCompare(bName);
-      })
-      .slice(0, 8);
+      return aExact - bExact;
+    });
 
     return NextResponse.json({
-      clientes: filtered.map((cliente) => ({
+      clientes: sorted.map((cliente) => ({
         id: cliente.id,
         nombre: cliente.nombre,
         telefono: cliente.telefono,

@@ -1,17 +1,6 @@
-//src/app/api/clientes/search/route.ts
-
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-function normalizeText(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ");
-}
 
 export async function GET(req: Request) {
   try {
@@ -24,28 +13,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ results: [] });
     }
 
-    const normalizedQuery = normalizeText(q);
-
     const clientes = await prisma.client.findMany({
       where: {
         activo: true,
-        ...(user.rol === "VENDEDOR"
-          ? {
-              OR: [
-                {
-                  vendedorId: user.id,
-                },
-                {
-                  credits: {
-                    some: {
-                      vendedorId: user.id,
-                      activo: true,
-                    },
-                  },
-                },
-              ],
-            }
-          : {}),
+        ...(user.rol === "VENDEDOR" ? { vendedorId: user.id } : {}),
+        nombre: {
+          contains: q,
+        },
       },
       include: {
         vendedor: true,
@@ -58,55 +32,17 @@ export async function GET(req: Request) {
           },
         },
       },
+      take: 8,
       orderBy: {
         nombre: "asc",
       },
-      take: 1500,
     });
 
-    const filtered = clientes
-      .filter((cliente) => {
-        const fields = [
-          cliente.nombre,
-          cliente.telefono ?? "",
-          cliente.direccion ?? "",
-          cliente.vendedor.nombre,
-        ];
-
-        return fields.some((field) =>
-          normalizeText(field).includes(normalizedQuery),
-        );
-      })
-      .sort((a, b) => {
-        const aName = normalizeText(a.nombre);
-        const bName = normalizeText(b.nombre);
-
-        const aExact = aName === normalizedQuery ? 0 : 1;
-        const bExact = bName === normalizedQuery ? 0 : 1;
-
-        if (aExact !== bExact) return aExact - bExact;
-
-        const aStarts = aName.startsWith(normalizedQuery) ? 0 : 1;
-        const bStarts = bName.startsWith(normalizedQuery) ? 0 : 1;
-
-        if (aStarts !== bStarts) return aStarts - bStarts;
-
-        return aName.localeCompare(bName);
-      })
-      .slice(0, 8);
-
-    const results = filtered.map((cliente) => {
-      const cuentasVisibles =
-        user.rol === "VENDEDOR"
-          ? cliente.credits.filter((cuenta) => cuenta.vendedorId === user.id)
-          : cliente.credits;
-
-      const cuentasActivas = cuentasVisibles.filter(
-        (cuenta) => cuenta.saldo > 0,
-      );
+    const results = clientes.map((cliente) => {
+      const cuentasActivas = cliente.credits.filter((c) => c.saldo > 0);
 
       const saldoPendiente = cuentasActivas.reduce(
-        (acc, cuenta) => acc + cuenta.saldo,
+        (acc, c) => acc + c.saldo,
         0,
       );
 
@@ -120,10 +56,7 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ results });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Error al buscar clientes";
-
-    return NextResponse.json({ error: message }, { status: 401 });
+  } catch {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 }
