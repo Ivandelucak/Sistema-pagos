@@ -1,27 +1,25 @@
 import "dotenv/config";
+import path from "path";
+import fs from "fs";
 import * as XLSX from "xlsx";
 import bcrypt from "bcryptjs";
-import path from "path";
 import { prisma } from "../src/lib/prisma";
 import { calculateCreditTracking } from "../src/lib/credit-calculations";
 
-type VendorName = "Dani" | "Nico" | "Violeta" | "Paola" | "Gustavo";
-
-type ImportSource = {
-  fileName: string;
-  sheets: {
-    sheetAliases: string[];
-    vendedor: VendorName;
-  }[];
+type SellerConfig = {
+  nombre: string;
+  email: string;
+  password: string;
+  fileCandidates: string[];
+  sheetName: string;
 };
 
-type ParsedRow = {
-  fileName: string;
+type ParsedExcelRow = {
+  sourceName: string;
+  sellerName: string;
   sheetName: string;
   rowNumber: number;
-  vendedor: VendorName;
   cliente: string;
-  clienteKey: string;
   fechaInicio: Date;
   tipo: string;
   frecuenciaDias: number;
@@ -31,96 +29,68 @@ type ParsedRow = {
   cantidadCuotas: number;
 };
 
-type InvalidRow = {
-  fileName: string;
+type SkippedRow = {
+  sourceName: string;
   sheetName: string;
   rowNumber: number;
-  vendedor: VendorName;
   cliente: string;
   reason: string;
 };
 
-const IMPORT_DIR = path.join(process.cwd(), "prisma", "imports");
-
-const SOURCES: ImportSource[] = [
+const SELLERS: SellerConfig[] = [
   {
-    fileName: "Sistema clientes dani.xlsx",
-    sheets: [
-      {
-        sheetAliases: ["clientes dani", "dani"],
-        vendedor: "Dani",
-      },
-    ],
+    nombre: "Dani",
+    email: "dani.cobrador@credifer",
+    password: "dani123",
+    fileCandidates: ["Sistema clientes dani.xlsx"],
+    sheetName: "clientes dani",
   },
   {
-    fileName: "Sistema clientes (1).xlsx",
-    sheets: [
-      {
-        sheetAliases: ["nico", "clientes nico"],
-        vendedor: "Nico",
-      },
-      {
-        sheetAliases: ["clientes violeta", "violeta"],
-        vendedor: "Violeta",
-      },
-      {
-        sheetAliases: ["clientes paola", "paola"],
-        vendedor: "Paola",
-      },
-      {
-        sheetAliases: ["clientes gustavo", "gustavo"],
-        vendedor: "Gustavo",
-      },
+    nombre: "Nico",
+    email: "nico.cobrador@credifer",
+    password: "nico123",
+    fileCandidates: [
+      "Sistema clientes definitivo 1.xlsx",
+      "Sistema clientes definitivo.xlsx",
     ],
+    sheetName: "nico",
+  },
+  {
+    nombre: "Violeta",
+    email: "violeta.cobrador@credifer",
+    password: "violeta123",
+    fileCandidates: [
+      "Sistema clientes definitivo 1.xlsx",
+      "Sistema clientes definitivo.xlsx",
+    ],
+    sheetName: "clientes violeta",
+  },
+  {
+    nombre: "Paola",
+    email: "paola.cobrador@credifer",
+    password: "paola123",
+    fileCandidates: [
+      "Sistema clientes definitivo 1.xlsx",
+      "Sistema clientes definitivo.xlsx",
+    ],
+    sheetName: "clientes paola",
+  },
+  {
+    nombre: "Gustavo",
+    email: "gustavo.cobrador@credifer",
+    password: "gustavo123",
+    fileCandidates: [
+      "Sistema clientes definitivo 1.xlsx",
+      "Sistema clientes definitivo.xlsx",
+    ],
+    sheetName: "clientes gustavo",
   },
 ];
 
-const VENDORS: Record<
-  VendorName,
-  {
-    nombre: string;
-    email: string;
-    defaultPassword: string;
-  }
-> = {
-  Dani: {
-    nombre: "Dani",
-    email: "dani.cobrador@credifer",
-    defaultPassword: "dani123",
-  },
-  Nico: {
-    nombre: "Nico",
-    email: "nico.cobrador@credifer",
-    defaultPassword: "nico123",
-  },
-  Violeta: {
-    nombre: "Violeta",
-    email: "violeta.cobrador@credifer",
-    defaultPassword: "violeta123",
-  },
-  Paola: {
-    nombre: "Paola",
-    email: "paola.cobrador@credifer",
-    defaultPassword: "paola123",
-  },
-  Gustavo: {
-    nombre: "Gustavo",
-    email: "gustavo.cobrador@credifer",
-    defaultPassword: "gustavo123",
-  },
-};
-
-const COL = {
-  CLIENTE: 0,
-  FECHA: 1,
-  TIPO: 2,
-  FRECUENCIA: 3,
-  VALOR_CUOTA: 4,
-  SALDO: 5,
-  TOTAL: 6,
-  PAGO: 7,
-  CUOTAS_PAGADAS: 11,
-  CUOTAS_RESTANTES: 12,
+const ROOT_ADMIN = {
+  nombre: "Ivan Admin",
+  email: "ivan.admin@credifer",
+  password: "admin123",
 };
 
 function normalizeText(value: string) {
@@ -132,201 +102,309 @@ function normalizeText(value: string) {
     .replace(/\s+/g, " ");
 }
 
-function normalizeSheetName(value: string) {
-  return normalizeText(value);
+function normalizeHeader(value: unknown) {
+  return normalizeText(String(value ?? ""))
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
 }
 
-function findSheetName({
-  workbook,
-  fileName,
-  sheetAliases,
-}: {
-  workbook: XLSX.WorkBook;
-  fileName: string;
-  sheetAliases: string[];
-}) {
-  const availableSheets = workbook.SheetNames;
-
-  const normalizedAliases = sheetAliases.map(normalizeSheetName);
-
-  const found = availableSheets.find((sheetName) =>
-    normalizedAliases.includes(normalizeSheetName(sheetName)),
-  );
-
-  if (!found) {
-    throw new Error(
-      [
-        `No se encontró una hoja válida en ${fileName}.`,
-        `Busqué: ${sheetAliases.join(" / ")}`,
-        `Hojas disponibles: ${availableSheets.join(" / ")}`,
-      ].join("\n"),
-    );
-  }
-
-  return found;
-}
-
-function cleanText(value: unknown) {
+function cleanName(value: unknown) {
   return String(value ?? "")
     .trim()
     .replace(/\s+/g, " ");
 }
 
-function parseNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") return null;
+function cleanType(value: unknown) {
+  const tipo = String(value ?? "").trim();
 
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    return value;
-  }
-
-  const normalized = String(value)
-    .trim()
-    .replace(/\$/g, "")
-    .replace(/\s/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-
-  const parsed = Number(normalized);
-
-  return Number.isFinite(parsed) ? parsed : null;
+  return tipo || "cred";
 }
 
-function excelSerialToLocalDate(serial: number) {
-  const epoch = new Date(1899, 11, 30);
-  const date = new Date(epoch);
-
-  date.setDate(epoch.getDate() + Math.floor(serial));
-  date.setHours(0, 0, 0, 0);
-
-  return date;
+function dateOnlyUTC(year: number, month: number, day: number) {
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
-function parseExcelDate(value: unknown): Date | null {
+function parseExcelDate(value: unknown) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    return dateOnlyUTC(
+      value.getFullYear(),
+      value.getMonth() + 1,
+      value.getDate(),
+    );
   }
 
   if (typeof value === "number" && Number.isFinite(value)) {
-    return excelSerialToLocalDate(value);
+    const parsed = XLSX.SSF.parse_date_code(value);
+
+    if (!parsed) return null;
+
+    return dateOnlyUTC(parsed.y, parsed.m, parsed.d);
   }
 
   if (typeof value === "string") {
-    const trimmed = value.trim();
+    const raw = value.trim();
 
-    const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (iso) {
-      const year = Number(iso[1]);
-      const month = Number(iso[2]);
-      const day = Number(iso[3]);
+    if (!raw) return null;
 
-      return new Date(year, month - 1, day);
+    const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+      return dateOnlyUTC(
+        Number(isoMatch[1]),
+        Number(isoMatch[2]),
+        Number(isoMatch[3]),
+      );
     }
 
-    const arg = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (arg) {
-      const day = Number(arg[1]);
-      const month = Number(arg[2]);
-      const year = Number(arg[3]);
+    const slashMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+    if (slashMatch) {
+      const day = Number(slashMatch[1]);
+      const month = Number(slashMatch[2]);
+      let year = Number(slashMatch[3]);
 
-      return new Date(year, month - 1, day);
+      if (year < 100) year += 2000;
+
+      return dateOnlyUTC(year, month, day);
+    }
+
+    const parsedDate = new Date(raw);
+
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return dateOnlyUTC(
+        parsedDate.getFullYear(),
+        parsedDate.getMonth() + 1,
+        parsedDate.getDate(),
+      );
     }
   }
 
   return null;
 }
 
-function getCantidadCuotas({
-  total,
-  valorCuota,
-  cuotasPagadasExcel,
-  cuotasRestantesExcel,
-}: {
-  total: number;
-  valorCuota: number;
-  cuotasPagadasExcel: number | null;
-  cuotasRestantesExcel: number | null;
-}) {
-  if (
-    cuotasPagadasExcel !== null &&
-    cuotasRestantesExcel !== null &&
-    cuotasPagadasExcel >= 0 &&
-    cuotasRestantesExcel >= 0
-  ) {
-    const cantidad = Math.round(cuotasPagadasExcel + cuotasRestantesExcel);
-
-    if (cantidad > 0) return cantidad;
+function parseNumber(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
   }
 
-  return Math.max(Math.ceil(total / valorCuota), 1);
+  if (typeof value !== "string") return null;
+
+  const raw = value.trim();
+
+  if (!raw) return null;
+
+  let normalized = raw
+    .replace(/\$/g, "")
+    .replace(/\s/g, "")
+    .replace(/[^\d,.-]/g, "");
+
+  if (!normalized) return null;
+
+  const hasComma = normalized.includes(",");
+  const hasDot = normalized.includes(".");
+
+  if (hasComma && hasDot) {
+    const lastComma = normalized.lastIndexOf(",");
+    const lastDot = normalized.lastIndexOf(".");
+
+    if (lastComma > lastDot) {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = normalized.replace(/,/g, "");
+    }
+  } else if (hasComma) {
+    normalized = normalized.replace(",", ".");
+  }
+
+  const parsed = Number(normalized);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseInteger(value: unknown) {
+  const parsed = parseNumber(value);
+
+  if (parsed === null) return null;
+
+  return Math.trunc(parsed);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function findExistingFile(fileCandidates: string[]) {
+  const searchDirs = [
+    process.cwd(),
+    path.join(process.cwd(), "prisma"),
+    path.join(process.cwd(), "prisma", "imports"),
+  ];
+
+  for (const dir of searchDirs) {
+    for (const fileName of fileCandidates) {
+      const fullPath = path.join(dir, fileName);
+
+      if (fs.existsSync(fullPath)) return fullPath;
+    }
+  }
+
+  throw new Error(
+    `No se encontró ninguno de estos archivos: ${fileCandidates.join(", ")}`,
+  );
+}
+
+function findSheetName(workbook: XLSX.WorkBook, requestedSheetName: string) {
+  const requested = normalizeText(requestedSheetName);
+
+  const exact = workbook.SheetNames.find(
+    (sheetName) => normalizeText(sheetName) === requested,
+  );
+
+  if (exact) return exact;
+
+  const available = workbook.SheetNames.join(", ");
+
+  throw new Error(
+    `No existe la hoja "${requestedSheetName}". Hojas disponibles: ${available}`,
+  );
+}
+
+function getHeaderIndexMap(headerRow: unknown[]) {
+  const map = new Map<string, number>();
+
+  headerRow.forEach((cell, index) => {
+    const header = normalizeHeader(cell);
+
+    if (!header) return;
+
+    map.set(header, index);
+  });
+
+  return {
+    cliente: findHeaderIndex(map, ["cliente"]),
+    fecha: findHeaderIndex(map, ["fecha"]),
+    tipo: findHeaderIndex(map, ["tipo"]),
+    frecuencia: findHeaderIndex(map, ["frecuencia"]),
+    valorCuota: findHeaderIndex(map, ["valorcuota", "valorcuotas"]),
+    saldo: findHeaderIndex(map, ["saldo"]),
+    total: findHeaderIndex(map, ["total"]),
+    pago: findHeaderIndex(map, ["pago"]),
+    proximoVencimiento: findHeaderIndex(map, [
+      "proxvto",
+      "proximovencimiento",
+      "proxvencimiento",
+    ]),
+    cuotasPagadas: findHeaderIndex(map, ["cuotaspagadas", "cp", "cspagadas"]),
+    cuotasRestantes: findHeaderIndex(map, [
+      "cuotasrestantes",
+      "cres",
+      "res",
+      "cuotasres",
+    ]),
+  };
+}
+
+function findHeaderIndex(map: Map<string, number>, candidates: string[]) {
+  for (const candidate of candidates) {
+    const normalizedCandidate = normalizeHeader(candidate);
+
+    if (map.has(normalizedCandidate)) {
+      return map.get(normalizedCandidate)!;
+    }
+  }
+
+  return -1;
+}
+
+function getCell(row: unknown[], index: number) {
+  if (index < 0) return null;
+
+  return row[index] ?? null;
+}
+
+function isEmptyRow(row: unknown[]) {
+  return row.every((cell) => {
+    if (cell === null || cell === undefined) return true;
+
+    if (typeof cell === "string" && cell.trim() === "") return true;
+
+    return false;
+  });
 }
 
 function parseRowsFromSheet({
-  workbook,
-  fileName,
-  sheetAliases,
-  vendedor,
+  sourceName,
+  sellerName,
+  sheetName,
+  worksheet,
 }: {
-  workbook: XLSX.WorkBook;
-  fileName: string;
-  sheetAliases: string[];
-  vendedor: VendorName;
+  sourceName: string;
+  sellerName: string;
+  sheetName: string;
+  worksheet: XLSX.WorkSheet;
 }) {
-  const sheetName = findSheetName({
-    workbook,
-    fileName,
-    sheetAliases,
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(worksheet, {
+    header: 1,
+    defval: null,
+    raw: true,
   });
 
-  const sheet = workbook.Sheets[sheetName];
+  const parsedRows: ParsedExcelRow[] = [];
+  const skippedRows: SkippedRow[] = [];
 
-  if (!sheet) {
-    throw new Error(`No existe la hoja "${sheetName}" en ${fileName}`);
+  if (rows.length === 0) {
+    return { parsedRows, skippedRows };
   }
 
-  const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-    header: 1,
-    raw: true,
-    defval: null,
-    blankrows: false,
-  });
+  const headerRowIndex = rows.findIndex((row) =>
+    row.some((cell) => normalizeHeader(cell) === "cliente"),
+  );
 
-  const parsedRows: ParsedRow[] = [];
-  const invalidRows: InvalidRow[] = [];
+  if (headerRowIndex < 0) {
+    throw new Error(
+      `No se encontró encabezado con columna CLIENTE en ${sourceName} / ${sheetName}`,
+    );
+  }
 
-  for (let index = 1; index < rawRows.length; index++) {
-    const row = rawRows[index];
+  const headerMap = getHeaderIndexMap(rows[headerRowIndex]);
+
+  if (
+    headerMap.cliente < 0 ||
+    headerMap.fecha < 0 ||
+    headerMap.frecuencia < 0 ||
+    headerMap.valorCuota < 0 ||
+    headerMap.saldo < 0 ||
+    headerMap.total < 0 ||
+    headerMap.pago < 0
+  ) {
+    throw new Error(
+      `Faltan columnas obligatorias en ${sourceName} / ${sheetName}`,
+    );
+  }
+
+  for (let index = headerRowIndex + 1; index < rows.length; index++) {
+    const row = rows[index];
     const rowNumber = index + 1;
 
-    const cliente = cleanText(row[COL.CLIENTE]);
+    if (isEmptyRow(row)) continue;
+
+    const cliente = cleanName(getCell(row, headerMap.cliente));
 
     if (!cliente) continue;
 
-    const fechaInicio = parseExcelDate(row[COL.FECHA]);
-    const frecuenciaDias = parseNumber(row[COL.FRECUENCIA]);
-    const valorCuota = parseNumber(row[COL.VALOR_CUOTA]);
-    const total = parseNumber(row[COL.TOTAL]);
-    const saldoExcel = parseNumber(row[COL.SALDO]);
-    const pagoExcel = parseNumber(row[COL.PAGO]);
-    const cuotasPagadasExcel = parseNumber(row[COL.CUOTAS_PAGADAS]);
-    const cuotasRestantesExcel = parseNumber(row[COL.CUOTAS_RESTANTES]);
-
-    const tipoRaw = cleanText(row[COL.TIPO]);
-    const tipo = tipoRaw || "Cuenta";
-
-    function reject(reason: string) {
-      invalidRows.push({
-        fileName,
-        sheetName,
-        rowNumber,
-        vendedor,
-        cliente,
-        reason,
-      });
-    }
+    const fechaInicio = parseExcelDate(getCell(row, headerMap.fecha));
+    const frecuenciaDias = parseInteger(getCell(row, headerMap.frecuencia));
+    const valorCuota = parseNumber(getCell(row, headerMap.valorCuota));
+    const saldoExcel = parseNumber(getCell(row, headerMap.saldo));
+    const totalExcel = parseNumber(getCell(row, headerMap.total));
+    const pagoExcel = parseNumber(getCell(row, headerMap.pago));
 
     if (!fechaInicio) {
-      reject("Fecha inválida");
+      skippedRows.push({
+        sourceName,
+        sheetName,
+        rowNumber,
+        cliente,
+        reason: "Fecha inválida",
+      });
       continue;
     }
 
@@ -335,232 +413,271 @@ function parseRowsFromSheet({
       !Number.isInteger(frecuenciaDias) ||
       frecuenciaDias <= 0
     ) {
-      reject("Frecuencia inválida");
+      skippedRows.push({
+        sourceName,
+        sheetName,
+        rowNumber,
+        cliente,
+        reason: "Frecuencia inválida",
+      });
       continue;
     }
 
-    if (valorCuota === null || valorCuota <= 0) {
-      reject("Valor de cuota inválido");
+    const frecuenciaDiasFinal = frecuenciaDias;
+
+    if (
+      valorCuota === null ||
+      !Number.isFinite(valorCuota) ||
+      valorCuota <= 0
+    ) {
+      skippedRows.push({
+        sourceName,
+        sheetName,
+        rowNumber,
+        cliente,
+        reason: "Valor de cuota inválido",
+      });
       continue;
     }
 
-    if (total === null || total <= 0) {
-      reject("Total inválido");
+    let total = totalExcel;
+    let pago = pagoExcel;
+    let saldo = saldoExcel;
+
+    if ((total === null || total <= 0) && saldo !== null && pago !== null) {
+      total = saldo + pago;
+    }
+
+    if (total === null || !Number.isFinite(total) || total <= 0) {
+      skippedRows.push({
+        sourceName,
+        sheetName,
+        rowNumber,
+        cliente,
+        reason: "Total inválido",
+      });
       continue;
     }
 
-    const montoPagado =
-      pagoExcel !== null
-        ? pagoExcel
-        : saldoExcel !== null
-          ? Math.max(total - saldoExcel, 0)
-          : 0;
-
-    if (montoPagado < 0) {
-      reject("Monto pagado negativo");
-      continue;
+    if (pago === null && saldo !== null) {
+      pago = total - saldo;
     }
 
-    if (montoPagado > total) {
-      reject("Monto pagado mayor al total");
-      continue;
+    if (saldo === null && pago !== null) {
+      saldo = total - pago;
     }
 
-    const cantidadCuotas = getCantidadCuotas({
-      total,
-      valorCuota,
-      cuotasPagadasExcel,
-      cuotasRestantesExcel,
-    });
+    if (pago === null || !Number.isFinite(pago)) {
+      pago = 0;
+    }
+
+    pago = clamp(pago, 0, total);
+
+    const cuotasPagadasExcel = parseInteger(
+      getCell(row, headerMap.cuotasPagadas),
+    );
+
+    const cuotasRestantesExcel = parseInteger(
+      getCell(row, headerMap.cuotasRestantes),
+    );
+
+    const cantidadCuotasDesdeExcel =
+      cuotasPagadasExcel !== null &&
+      cuotasRestantesExcel !== null &&
+      cuotasPagadasExcel >= 0 &&
+      cuotasRestantesExcel >= 0 &&
+      cuotasPagadasExcel + cuotasRestantesExcel > 0
+        ? cuotasPagadasExcel + cuotasRestantesExcel
+        : null;
+
+    const cantidadCuotas =
+      cantidadCuotasDesdeExcel ?? Math.max(Math.ceil(total / valorCuota), 1);
 
     parsedRows.push({
-      fileName,
+      sourceName,
+      sellerName,
       sheetName,
       rowNumber,
-      vendedor,
       cliente,
-      clienteKey: normalizeText(cliente),
       fechaInicio,
-      tipo,
-      frecuenciaDias,
+      tipo: cleanType(getCell(row, headerMap.tipo)),
+      frecuenciaDias: frecuenciaDiasFinal,
       valorCuota,
       total,
-      montoPagado,
+      montoPagado: pago,
       cantidadCuotas,
     });
   }
 
-  return { parsedRows, invalidRows };
+  return { parsedRows, skippedRows };
 }
 
 function loadExcelRows() {
-  const allRows: ParsedRow[] = [];
-  const allInvalidRows: InvalidRow[] = [];
+  const allRows: ParsedExcelRow[] = [];
+  const allSkippedRows: SkippedRow[] = [];
 
-  for (const source of SOURCES) {
-    const filePath = path.join(IMPORT_DIR, source.fileName);
+  for (const seller of SELLERS) {
+    const fullPath = findExistingFile(seller.fileCandidates);
+    const sourceName = path.basename(fullPath);
 
-    const workbook = XLSX.readFile(filePath, {
-      cellDates: false,
-      raw: true,
+    const workbook = XLSX.readFile(fullPath, {
+      cellDates: true,
     });
 
-    for (const sheet of source.sheets) {
-      const { parsedRows, invalidRows } = parseRowsFromSheet({
-        workbook,
-        fileName: source.fileName,
-        sheetAliases: sheet.sheetAliases,
-        vendedor: sheet.vendedor,
-      });
+    const realSheetName = findSheetName(workbook, seller.sheetName);
+    const worksheet = workbook.Sheets[realSheetName];
 
-      allRows.push(...parsedRows);
-      allInvalidRows.push(...invalidRows);
-    }
+    const { parsedRows, skippedRows } = parseRowsFromSheet({
+      sourceName,
+      sellerName: seller.nombre,
+      sheetName: realSheetName,
+      worksheet,
+    });
+
+    allRows.push(...parsedRows);
+    allSkippedRows.push(...skippedRows);
   }
 
-  return {
-    rows: allRows,
-    invalidRows: allInvalidRows,
-  };
+  return { rows: allRows, skippedRows: allSkippedRows };
 }
 
-async function ensureUsers() {
-  const adminPassword = await bcrypt.hash("admin123", 10);
+async function upsertUsers() {
+  const adminPassword = await bcrypt.hash(ROOT_ADMIN.password, 10);
 
   const admin = await prisma.user.upsert({
     where: {
-      email: "ivan.admin@credifer",
+      email: ROOT_ADMIN.email,
     },
     update: {
-      nombre: "Ivan Admin",
+      nombre: ROOT_ADMIN.nombre,
+      password: adminPassword,
       rol: "ADMIN",
       activo: true,
     },
     create: {
-      nombre: "Ivan Admin",
-      email: "ivan.admin@credifer",
+      nombre: ROOT_ADMIN.nombre,
+      email: ROOT_ADMIN.email,
       password: adminPassword,
       rol: "ADMIN",
       activo: true,
     },
   });
 
-  const vendorIdByName = new Map<VendorName, number>();
-  const canonicalVendorEmails = Object.values(VENDORS).map((v) => v.email);
+  const sellersByName = new Map<string, { id: number; nombre: string }>();
 
-  for (const [vendorName, config] of Object.entries(VENDORS) as [
-    VendorName,
-    (typeof VENDORS)[VendorName],
-  ][]) {
-    const password = await bcrypt.hash(config.defaultPassword, 10);
+  for (const seller of SELLERS) {
+    const password = await bcrypt.hash(seller.password, 10);
 
     const user = await prisma.user.upsert({
       where: {
-        email: config.email,
+        email: seller.email,
       },
       update: {
-        nombre: config.nombre,
+        nombre: seller.nombre,
+        password,
         rol: "VENDEDOR",
         activo: true,
       },
       create: {
-        nombre: config.nombre,
-        email: config.email,
+        nombre: seller.nombre,
+        email: seller.email,
         password,
         rol: "VENDEDOR",
         activo: true,
       },
     });
 
-    vendorIdByName.set(vendorName, user.id);
+    sellersByName.set(seller.nombre, {
+      id: user.id,
+      nombre: user.nombre,
+    });
   }
 
-  await prisma.user.updateMany({
-    where: {
-      rol: "VENDEDOR",
-      email: {
-        notIn: canonicalVendorEmails,
-      },
-    },
-    data: {
-      activo: false,
-    },
-  });
-
-  return {
-    admin,
-    vendorIdByName,
-  };
+  return { admin, sellersByName };
 }
 
 async function resetOperationalData() {
-  await prisma.payment.deleteMany();
-  await prisma.credit.deleteMany();
-  await prisma.client.deleteMany();
+  await prisma.$transaction([
+    prisma.payment.deleteMany(),
+    prisma.credit.deleteMany(),
+    prisma.client.deleteMany(),
+  ]);
 }
 
-async function importRows({
-  rows,
-  adminId,
-  vendorIdByName,
-}: {
-  rows: ParsedRow[];
-  adminId: number;
-  vendorIdByName: Map<VendorName, number>;
-}) {
-  const clientIdByKey = new Map<string, number>();
+function formatDate(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
 
-  const summary = {
-    clientsCreated: 0,
-    creditsCreated: 0,
-    paymentsCreated: 0,
-    byVendor: new Map<
-      VendorName,
-      {
-        clients: number;
-        credits: number;
-        payments: number;
-      }
-    >(),
-  };
+async function main() {
+  const shouldReset = process.argv.includes("--reset");
 
-  function vendorSummary(vendedor: VendorName) {
-    if (!summary.byVendor.has(vendedor)) {
-      summary.byVendor.set(vendedor, {
-        clients: 0,
-        credits: 0,
-        payments: 0,
-      });
+  if (!shouldReset) {
+    throw new Error(
+      "Este importador borra clientes/cuentas/pagos existentes. Ejecutalo con: npm run import:clientes:reset",
+    );
+  }
+
+  const { rows, skippedRows } = loadExcelRows();
+
+  if (rows.length === 0) {
+    throw new Error("No se encontraron filas válidas para importar.");
+  }
+
+  const { admin, sellersByName } = await upsertUsers();
+
+  await resetOperationalData();
+
+  const clientsByNormalizedName = new Map<string, { id: number }>();
+
+  const summary = new Map<
+    string,
+    {
+      clientes: Set<number>;
+      cuentas: number;
+      pagosIniciales: number;
     }
+  >();
 
-    return summary.byVendor.get(vendedor)!;
+  for (const seller of SELLERS) {
+    summary.set(seller.nombre, {
+      clientes: new Set<number>(),
+      cuentas: 0,
+      pagosIniciales: 0,
+    });
   }
 
   for (const row of rows) {
-    const vendedorId = vendorIdByName.get(row.vendedor);
+    const seller = sellersByName.get(row.sellerName);
 
-    if (!vendedorId) {
-      throw new Error(`No existe vendedor para ${row.vendedor}`);
+    if (!seller) {
+      skippedRows.push({
+        sourceName: row.sourceName,
+        sheetName: row.sheetName,
+        rowNumber: row.rowNumber,
+        cliente: row.cliente,
+        reason: `Vendedor no encontrado: ${row.sellerName}`,
+      });
+      continue;
     }
 
-    const clientKey = `${row.vendedor}::${row.clienteKey}`;
+    const normalizedClientName = normalizeText(row.cliente);
 
-    let clientId = clientIdByKey.get(clientKey);
+    let client = clientsByNormalizedName.get(normalizedClientName);
 
-    if (!clientId) {
-      const client = await prisma.client.create({
+    if (!client) {
+      const createdClient = await prisma.client.create({
         data: {
           nombre: row.cliente,
-          vendedorId,
+          vendedorId: seller.id,
           activo: true,
+        },
+        select: {
+          id: true,
         },
       });
 
-      clientId = client.id;
-      clientIdByKey.set(clientKey, clientId);
-
-      summary.clientsCreated += 1;
-      vendorSummary(row.vendedor).clients += 1;
+      client = createdClient;
+      clientsByNormalizedName.set(normalizedClientName, client);
     }
 
     const tracking = calculateCreditTracking({
@@ -573,11 +690,12 @@ async function importRows({
 
     const credit = await prisma.credit.create({
       data: {
-        clientId,
-        vendedorId,
+        clientId: client.id,
+        vendedorId: seller.id,
         fechaInicio: row.fechaInicio,
         tipo: row.tipo,
         frecuenciaDias: row.frecuenciaDias,
+        cantidadCuotas: row.cantidadCuotas,
         valorCuota: row.valorCuota,
         total: row.total,
         montoPagado: row.montoPagado,
@@ -585,14 +703,20 @@ async function importRows({
         proximoVencimiento: tracking.proximoVencimiento,
         cuotasPagadas: tracking.cuotasPagadas,
         cuotasRestantes: tracking.cuotasRestantes,
-        cantidadCuotas: row.cantidadCuotas,
         estado: tracking.estado,
         activo: true,
       },
+      select: {
+        id: true,
+      },
     });
 
-    summary.creditsCreated += 1;
-    vendorSummary(row.vendedor).credits += 1;
+    const sellerSummary = summary.get(row.sellerName);
+
+    if (sellerSummary) {
+      sellerSummary.clientes.add(client.id);
+      sellerSummary.cuentas += 1;
+    }
 
     if (row.montoPagado > 0) {
       await prisma.payment.create({
@@ -600,94 +724,58 @@ async function importRows({
           creditId: credit.id,
           monto: row.montoPagado,
           fechaPago: row.fechaInicio,
-          registradoPor: adminId,
+          registradoPor: admin.id,
         },
       });
 
-      summary.paymentsCreated += 1;
-      vendorSummary(row.vendedor).payments += 1;
+      if (sellerSummary) {
+        sellerSummary.pagosIniciales += 1;
+      }
     }
   }
 
-  return summary;
-}
-
-function printSummary({
-  rows,
-  invalidRows,
-  summary,
-}: {
-  rows: ParsedRow[];
-  invalidRows: InvalidRow[];
-  summary: Awaited<ReturnType<typeof importRows>>;
-}) {
   console.log("");
   console.log("IMPORTACIÓN FINALIZADA");
   console.log("----------------------");
+
+  for (const seller of SELLERS) {
+    const sellerSummary = summary.get(seller.nombre);
+
+    console.log(
+      `- ${seller.nombre}: ${sellerSummary?.clientes.size ?? 0} clientes, ${
+        sellerSummary?.cuentas ?? 0
+      } cuentas, ${sellerSummary?.pagosIniciales ?? 0} pagos iniciales`,
+    );
+  }
+
+  console.log("");
+  console.log(`Clientes únicos importados: ${clientsByNormalizedName.size}`);
   console.log(`Filas válidas procesadas: ${rows.length}`);
-  console.log(`Clientes creados: ${summary.clientsCreated}`);
-  console.log(`Cuentas creadas: ${summary.creditsCreated}`);
-  console.log(`Pagos iniciales creados: ${summary.paymentsCreated}`);
 
-  console.log("");
-  console.log("Resumen por vendedor:");
+  if (skippedRows.length > 0) {
+    console.log("");
+    console.log(`Filas salteadas: ${skippedRows.length}`);
 
-  for (const [vendedor, data] of summary.byVendor.entries()) {
-    console.log(
-      `- ${vendedor}: ${data.clients} clientes, ${data.credits} cuentas, ${data.payments} pagos iniciales`,
-    );
+    for (const skipped of skippedRows.slice(0, 50)) {
+      console.log(
+        `- ${skipped.sourceName} / ${skipped.sheetName} / fila ${skipped.rowNumber} / ${skipped.cliente}: ${skipped.reason}`,
+      );
+    }
+
+    if (skippedRows.length > 50) {
+      console.log(`... y ${skippedRows.length - 50} filas salteadas más.`);
+    }
   }
 
   console.log("");
-  console.log(`Filas salteadas: ${invalidRows.length}`);
-
-  for (const invalid of invalidRows.slice(0, 20)) {
-    console.log(
-      `- ${invalid.vendedor} / ${invalid.sheetName} / fila ${invalid.rowNumber} / ${invalid.cliente}: ${invalid.reason}`,
-    );
-  }
-
-  if (invalidRows.length > 20) {
-    console.log(`... y ${invalidRows.length - 20} filas más.`);
+  console.log("Usuarios vendedores:");
+  for (const seller of SELLERS) {
+    console.log(`- ${seller.nombre}: ${seller.email} / ${seller.password}`);
   }
 
   console.log("");
-  console.log("Usuarios vendedores de demo:");
-  for (const vendor of Object.values(VENDORS)) {
-    console.log(
-      `- ${vendor.nombre}: ${vendor.email} / ${vendor.defaultPassword}`,
-    );
-  }
-}
-
-async function main() {
-  const shouldReset = process.argv.includes("--reset");
-
-  if (!shouldReset) {
-    throw new Error(
-      "Este importador borra clientes/cuentas/pagos existentes. Ejecutalo con: npm run import:clientes -- --reset",
-    );
-  }
-
-  const { rows, invalidRows } = loadExcelRows();
-
-  const { admin, vendorIdByName } = await ensureUsers();
-
-  console.log("Eliminando datos operativos actuales...");
-  await resetOperationalData();
-
-  console.log("Importando clientes, cuentas y pagos iniciales...");
-  const summary = await importRows({
-    rows,
-    adminId: admin.id,
-    vendorIdByName,
-  });
-
-  printSummary({
-    rows,
-    invalidRows,
-    summary,
-  });
+  console.log(`Admin: ${ROOT_ADMIN.email} / ${ROOT_ADMIN.password}`);
+  console.log(`Fecha de importación: ${formatDate(new Date())}`);
 }
 
 main()
