@@ -1,3 +1,5 @@
+//src/app/api/clientes/sugerencias/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
@@ -22,12 +24,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ clientes: [] });
     }
 
+    const normalizedQuery = normalizeText(q);
+
     const clientes = await prisma.client.findMany({
       where: {
         activo: true,
-        nombre: {
-          contains: q,
-        },
       },
       select: {
         id: true,
@@ -50,23 +51,42 @@ export async function GET(req: Request) {
       orderBy: {
         nombre: "asc",
       },
-      take: 8,
+      take: 1500,
     });
 
-    const normalizedQuery = normalizeText(q);
+    const filtered = clientes
+      .filter((cliente) => {
+        const fields = [
+          cliente.nombre,
+          cliente.telefono ?? "",
+          cliente.direccion ?? "",
+          cliente.vendedor.nombre,
+        ];
 
-    const sorted = clientes.sort((a, b) => {
-      const aName = normalizeText(a.nombre);
-      const bName = normalizeText(b.nombre);
+        return fields.some((field) =>
+          normalizeText(field).includes(normalizedQuery),
+        );
+      })
+      .sort((a, b) => {
+        const aName = normalizeText(a.nombre);
+        const bName = normalizeText(b.nombre);
 
-      const aExact = aName === normalizedQuery ? 0 : 1;
-      const bExact = bName === normalizedQuery ? 0 : 1;
+        const aExact = aName === normalizedQuery ? 0 : 1;
+        const bExact = bName === normalizedQuery ? 0 : 1;
 
-      return aExact - bExact;
-    });
+        if (aExact !== bExact) return aExact - bExact;
+
+        const aStarts = aName.startsWith(normalizedQuery) ? 0 : 1;
+        const bStarts = bName.startsWith(normalizedQuery) ? 0 : 1;
+
+        if (aStarts !== bStarts) return aStarts - bStarts;
+
+        return aName.localeCompare(bName);
+      })
+      .slice(0, 8);
 
     return NextResponse.json({
-      clientes: sorted.map((cliente) => ({
+      clientes: filtered.map((cliente) => ({
         id: cliente.id,
         nombre: cliente.nombre,
         telefono: cliente.telefono,
