@@ -1,11 +1,12 @@
 import { prisma } from "./prisma";
+import {
+  addDaysToDateOnly,
+  getBusinessTodayDateOnly,
+} from "./credit-calculations";
 
 export async function getCreditsDueToday(vendedorId?: number) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
-
-  const manana = new Date(hoy);
-  manana.setDate(hoy.getDate() + 1);
+  const hoy = getBusinessTodayDateOnly();
+  const manana = addDaysToDateOnly(hoy, 1);
 
   return prisma.credit.findMany({
     where: {
@@ -30,8 +31,7 @@ export async function getCreditsDueToday(vendedorId?: number) {
 }
 
 export async function getOverdueCredits(vendedorId?: number) {
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = getBusinessTodayDateOnly();
 
   return prisma.credit.findMany({
     where: {

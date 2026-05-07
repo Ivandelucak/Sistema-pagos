@@ -1,6 +1,9 @@
+//src/app/clientes/page.tsx
+
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
+import ClientSearchInput from "@/components/ClientSearchInput";
 
 function normalizeText(value: string) {
   return value
@@ -185,11 +188,10 @@ export default async function ClientesPage({
                 Buscar cliente
               </label>
 
-              <input
-                name="q"
+              <ClientSearchInput
                 defaultValue={search}
                 placeholder="Buscar por nombre..."
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
+                vendedorId={vendedorId}
               />
             </div>
 

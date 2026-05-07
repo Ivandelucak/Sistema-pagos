@@ -1,7 +1,50 @@
 export type CreditStatus = "VENCIDO" | "VIGENTE" | "PAGADO";
 
-function normalizeDate(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const BUSINESS_TIME_ZONE = "America/Argentina/Buenos_Aires";
+
+function getDatePartsInArgentina(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+
+  return { year, month, day };
+}
+
+export function getBusinessTodayDateOnly(now = new Date()) {
+  const { year, month, day } = getDatePartsInArgentina(now);
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export function parseDateInputAsDateOnly(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export function normalizeStoredDateToDateOnly(date: Date) {
+  return new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+  );
+}
+
+export function addDaysToDateOnly(date: Date, days: number) {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+
+  return result;
 }
 
 export function calculateCreditTracking({
@@ -30,18 +73,18 @@ export function calculateCreditTracking({
 
   const cuotasCompletas = cuotasPagadas;
 
-  const fechaBase = normalizeDate(fechaInicio);
+  const fechaBase = normalizeStoredDateToDateOnly(fechaInicio);
 
-  const proximoVencimiento = new Date(fechaBase);
-  proximoVencimiento.setDate(
-    proximoVencimiento.getDate() + cuotasPagadas * frecuenciaDias,
+  const proximoVencimiento = addDaysToDateOnly(
+    fechaBase,
+    cuotasPagadas * frecuenciaDias,
   );
 
-  const hoy = normalizeDate(new Date());
-  const vencimiento = normalizeDate(proximoVencimiento);
+  const hoy = getBusinessTodayDateOnly();
+  const vencimiento = normalizeStoredDateToDateOnly(proximoVencimiento);
 
   const diasParaVencer = Math.round(
-    (vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24),
+    (vencimiento.getTime() - hoy.getTime()) / MS_PER_DAY,
   );
 
   const estado: CreditStatus =

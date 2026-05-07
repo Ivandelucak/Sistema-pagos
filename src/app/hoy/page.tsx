@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { getCreditsDueToday, getOverdueCredits } from "@/lib/credits";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
+import ClientSearchInput from "@/components/ClientSearchInput";
 
 type CreditItem = Awaited<ReturnType<typeof getOverdueCredits>>[number];
 
@@ -148,11 +149,10 @@ export default async function HoyPage({
                 Buscar cliente
               </label>
 
-              <input
-                name="q"
+              <ClientSearchInput
                 defaultValue={search}
                 placeholder="Buscar por nombre, dirección o tipo..."
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 outline-none transition-colors focus:border-slate-900"
+                vendedorId={vendedorIdFiltro}
               />
             </div>
 

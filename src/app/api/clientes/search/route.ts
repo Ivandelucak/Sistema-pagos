@@ -1,5 +1,3 @@
-//src/app/api/clientes/search/route.ts
-
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +18,20 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim() ?? "";
 
+    const vendedorIdParam = searchParams.get("vendedorId");
+    const vendedorIdFromQuery = vendedorIdParam
+      ? Number(vendedorIdParam)
+      : null;
+
+    const vendedorIdFiltro =
+      user.rol === "VENDEDOR"
+        ? user.id
+        : vendedorIdFromQuery !== null &&
+            Number.isInteger(vendedorIdFromQuery) &&
+            vendedorIdFromQuery > 0
+          ? vendedorIdFromQuery
+          : undefined;
+
     if (q.length < 3) {
       return NextResponse.json({ results: [] });
     }
@@ -29,17 +41,16 @@ export async function GET(req: Request) {
     const clientes = await prisma.client.findMany({
       where: {
         activo: true,
-        ...(user.rol === "VENDEDOR"
+        ...(Number.isInteger(vendedorIdFiltro)
           ? {
               OR: [
                 {
-                  vendedorId: user.id,
+                  vendedorId: vendedorIdFiltro,
                 },
                 {
                   credits: {
                     some: {
-                      vendedorId: user.id,
-                      activo: true,
+                      vendedorId: vendedorIdFiltro,
                     },
                   },
                 },
@@ -71,6 +82,7 @@ export async function GET(req: Request) {
           cliente.telefono ?? "",
           cliente.direccion ?? "",
           cliente.vendedor.nombre,
+          ...cliente.credits.map((cuenta) => cuenta.tipo),
         ];
 
         return fields.some((field) =>
@@ -96,10 +108,11 @@ export async function GET(req: Request) {
       .slice(0, 8);
 
     const results = filtered.map((cliente) => {
-      const cuentasVisibles =
-        user.rol === "VENDEDOR"
-          ? cliente.credits.filter((cuenta) => cuenta.vendedorId === user.id)
-          : cliente.credits;
+      const cuentasVisibles = Number.isInteger(vendedorIdFiltro)
+        ? cliente.credits.filter(
+            (cuenta) => cuenta.vendedorId === vendedorIdFiltro,
+          )
+        : cliente.credits;
 
       const cuentasActivas = cuentasVisibles.filter(
         (cuenta) => cuenta.saldo > 0,
