@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import ConfirmDialog from "@/components/ConfirmDialog";
+import { createPortal } from "react-dom";
 
 type CurrentUser = {
   id: number;
@@ -13,14 +12,19 @@ type CurrentUser = {
 };
 
 export default function UserMenu({ user }: { user: CurrentUser }) {
-  const router = useRouter();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const isAdmin = user.rol === "ADMIN";
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -39,23 +43,136 @@ export default function UserMenu({ user }: { user: CurrentUser }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!confirmLogout) return;
+
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape" && !loading) {
+        setConfirmLogout(false);
+        setError("");
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [confirmLogout, loading]);
+
+  useEffect(() => {
+    if (!confirmLogout) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [confirmLogout]);
+
   async function handleLogout() {
+    if (loading) return;
+
     setLoading(true);
+    setError("");
 
-    const res = await fetch("/api/auth/logout", {
-      method: "POST",
-    });
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+    }, 10000);
 
-    setLoading(false);
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "same-origin",
+        signal: controller.signal,
+      });
 
-    if (!res.ok) return;
+      window.clearTimeout(timeout);
 
-    setConfirmLogout(false);
-    setOpen(false);
+      if (!res.ok) {
+        setError("No se pudo cerrar sesión. Probá nuevamente.");
+        setLoading(false);
+        return;
+      }
 
-    router.replace("/login");
-    router.refresh();
+      window.location.replace("/login");
+    } catch {
+      window.clearTimeout(timeout);
+      setError("No se pudo cerrar sesión. Probá nuevamente.");
+      setLoading(false);
+    }
   }
+
+  const logoutModal =
+    mounted && confirmLogout
+      ? createPortal(
+          <div className="fixed inset-0 z-99999 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+            <button
+              type="button"
+              aria-label="Cerrar modal"
+              className="absolute inset-0 cursor-default"
+              disabled={loading}
+              onClick={() => {
+                setConfirmLogout(false);
+                setError("");
+              }}
+            />
+
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="logout-title"
+              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200"
+            >
+              <h2
+                id="logout-title"
+                className="text-lg font-semibold text-slate-950"
+              >
+                Cerrar sesión
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                ¿Seguro que querés cerrar la sesión actual? Vas a tener que
+                volver a ingresar con tu usuario y contraseña para usar el
+                sistema.
+              </p>
+
+              {error && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setConfirmLogout(false);
+                    setError("");
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleLogout}
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? "Cerrando..." : "Sí, cerrar sesión"}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -107,6 +224,7 @@ export default function UserMenu({ user }: { user: CurrentUser }) {
               onClick={() => {
                 setOpen(false);
                 setConfirmLogout(true);
+                setError("");
               }}
               className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
             >
@@ -116,16 +234,7 @@ export default function UserMenu({ user }: { user: CurrentUser }) {
         </div>
       )}
 
-      {confirmLogout && (
-        <ConfirmDialog
-          title="Cerrar sesión"
-          description="¿Seguro que querés cerrar la sesión actual? Vas a tener que volver a ingresar con tu usuario y contraseña."
-          confirmText="Cerrar sesión"
-          loading={loading}
-          onConfirm={handleLogout}
-          onCancel={() => setConfirmLogout(false)}
-        />
-      )}
+      {logoutModal}
     </div>
   );
 }
