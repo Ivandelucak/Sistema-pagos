@@ -147,7 +147,7 @@ export default function EditCreditButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 overflow-y-auto bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
           <div className="mx-auto flex min-h-dvh w-full max-w-xl items-center">
             <div className="w-full rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
               <h2 className="text-lg font-semibold text-slate-950">

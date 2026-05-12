@@ -71,7 +71,7 @@ export default function EditClientButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-slate-200">
             <h2 className="text-lg font-semibold text-slate-950">
               Editar cliente

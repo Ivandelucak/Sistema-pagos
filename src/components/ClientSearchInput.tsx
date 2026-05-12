@@ -8,19 +8,24 @@ type SearchResult = {
   nombre: string;
   vendedor: string;
   cuentasActivas: number;
+  cuentasSaldadas?: number;
   saldoPendiente: number;
 };
+
+type EstadoCuenta = "pendientes" | "saldadas" | "todas";
 
 export default function ClientSearchInput({
   name = "q",
   defaultValue,
   placeholder = "Buscar cliente...",
   vendedorId,
+  estado = "pendientes",
 }: {
   name?: string;
   defaultValue: string;
   placeholder?: string;
   vendedorId?: number;
+  estado?: EstadoCuenta;
 }) {
   const [query, setQuery] = useState(defaultValue);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -65,6 +70,7 @@ export default function ClientSearchInput({
 
         const params = new URLSearchParams();
         params.set("q", value);
+        params.set("estado", estado);
 
         if (vendedorId) {
           params.set("vendedorId", String(vendedorId));
@@ -93,7 +99,7 @@ export default function ClientSearchInput({
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [query, vendedorId]);
+  }, [query, vendedorId, estado]);
 
   return (
     <div ref={wrapperRef} className="relative w-full">
@@ -142,11 +148,26 @@ export default function ClientSearchInput({
                     <p className="text-xs text-slate-500">
                       Vendedor: {cliente.vendedor}
                     </p>
+
+                    {estado !== "pendientes" && (
+                      <p className="mt-1 text-xs text-slate-500">
+                        Pendientes: {cliente.cuentasActivas}
+                        {typeof cliente.cuentasSaldadas === "number"
+                          ? ` · Saldadas: ${cliente.cuentasSaldadas}`
+                          : ""}
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right">
                     <p className="text-xs text-slate-500">Saldo</p>
-                    <p className="text-sm font-bold text-red-600">
+                    <p
+                      className={`text-sm font-bold ${
+                        cliente.saldoPendiente > 0
+                          ? "text-red-600"
+                          : "text-emerald-600"
+                      }`}
+                    >
                       ${cliente.saldoPendiente.toLocaleString("es-AR")}
                     </p>
                   </div>

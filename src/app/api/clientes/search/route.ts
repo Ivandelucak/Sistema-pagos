@@ -1,3 +1,5 @@
+//src/app/api/clientes/search/route.ts
+
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -72,6 +74,13 @@ export async function GET(req: Request) {
           where: {
             activo: true,
           },
+          include: {
+            vendedor: {
+              select: {
+                nombre: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: "desc",
           },
@@ -109,6 +118,7 @@ export async function GET(req: Request) {
           cliente.direccion ?? "",
           cliente.vendedor.nombre,
           ...cuentasVisibles.map((cuenta) => cuenta.tipo),
+          ...cuentasVisibles.map((cuenta) => cuenta.vendedor.nombre),
         ];
 
         return fields.some((field) =>
