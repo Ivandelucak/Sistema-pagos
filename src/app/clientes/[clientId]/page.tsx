@@ -3,6 +3,7 @@
 import TransferCreditVendorButton from "@/components/TransferCreditVendorButton";
 import ClientObservationForm from "@/components/ClientObservationForm";
 import TransferClientVendorButton from "@/components/TransferClientVendorButton";
+import EditClientButton from "@/components/EditClientButton";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -155,6 +156,12 @@ export default async function ClientePage({
 
             {user.rol === "ADMIN" && (
               <div className="flex flex-col gap-2 sm:flex-row">
+                <EditClientButton
+                  clientId={cliente.id}
+                  initialNombre={cliente.nombre}
+                  initialTelefono={cliente.telefono ?? ""}
+                  initialDireccion={cliente.direccion ?? ""}
+                />
                 <TransferClientVendorButton
                   clientId={cliente.id}
                   currentVendorId={cliente.vendedorId}

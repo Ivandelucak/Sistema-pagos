@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+type EstadoCuenta = "pendientes" | "saldadas" | "todas";
+
 function normalizeText(value: string) {
   return value
     .trim()
@@ -17,6 +19,12 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q")?.trim() ?? "";
+
+    const estadoParam = searchParams.get("estado");
+    const estado: EstadoCuenta =
+      estadoParam === "saldadas" || estadoParam === "todas"
+        ? estadoParam
+        : "pendientes";
 
     const vendedorIdParam = searchParams.get("vendedorId");
     const vendedorIdFromQuery = vendedorIdParam
@@ -77,12 +85,30 @@ export async function GET(req: Request) {
 
     const filtered = clientes
       .filter((cliente) => {
+        const cuentasVisibles = Number.isInteger(vendedorIdFiltro)
+          ? cliente.credits.filter(
+              (cuenta) => cuenta.vendedorId === vendedorIdFiltro,
+            )
+          : cliente.credits;
+
+        const tienePendientes = cuentasVisibles.some(
+          (cuenta) => cuenta.saldo > 0,
+        );
+
+        const tieneSaldadas = cuentasVisibles.some(
+          (cuenta) => cuenta.saldo <= 0,
+        );
+
+        if (estado === "pendientes" && !tienePendientes) return false;
+        if (estado === "saldadas" && !tieneSaldadas) return false;
+        if (estado === "todas" && cuentasVisibles.length === 0) return false;
+
         const fields = [
           cliente.nombre,
           cliente.telefono ?? "",
           cliente.direccion ?? "",
           cliente.vendedor.nombre,
-          ...cliente.credits.map((cuenta) => cuenta.tipo),
+          ...cuentasVisibles.map((cuenta) => cuenta.tipo),
         ];
 
         return fields.some((field) =>
@@ -114,11 +140,15 @@ export async function GET(req: Request) {
           )
         : cliente.credits;
 
-      const cuentasActivas = cuentasVisibles.filter(
+      const cuentasPendientes = cuentasVisibles.filter(
         (cuenta) => cuenta.saldo > 0,
       );
 
-      const saldoPendiente = cuentasActivas.reduce(
+      const cuentasSaldadas = cuentasVisibles.filter(
+        (cuenta) => cuenta.saldo <= 0,
+      );
+
+      const saldoPendiente = cuentasPendientes.reduce(
         (acc, cuenta) => acc + cuenta.saldo,
         0,
       );
@@ -127,7 +157,8 @@ export async function GET(req: Request) {
         id: cliente.id,
         nombre: cliente.nombre,
         vendedor: cliente.vendedor.nombre,
-        cuentasActivas: cuentasActivas.length,
+        cuentasActivas: cuentasPendientes.length,
+        cuentasSaldadas: cuentasSaldadas.length,
         saldoPendiente,
       };
     });

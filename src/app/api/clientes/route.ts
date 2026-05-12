@@ -1,3 +1,5 @@
+//src/app/api/clientes/route.ts
+
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";

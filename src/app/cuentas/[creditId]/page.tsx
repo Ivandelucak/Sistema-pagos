@@ -9,6 +9,7 @@ import CreditStatusButton from "@/components/CreditStatusButton";
 import EditPaymentButton from "@/components/EditPaymentButton";
 import DeletePaymentButton from "@/components/DeletePaymentButton";
 import BackButton from "@/components/BackButton";
+import EditCreditButton from "@/components/EditCreditButton";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,23 @@ export default async function CuentaPage({
 
   const progresoSeguro = Math.min(Math.max(progreso, 0), 100);
   const isAdmin = user.rol === "ADMIN";
+
+  const vendedores = isAdmin
+    ? await prisma.user.findMany({
+        where: {
+          rol: "VENDEDOR",
+          activo: true,
+        },
+        select: {
+          id: true,
+          nombre: true,
+        },
+        orderBy: {
+          nombre: "asc",
+        },
+      })
+    : [];
+
   const cuentaPagada = tracking.saldo <= 0;
   const cuentaVencida = tracking.diasParaVencer < 0 && !cuentaPagada;
   const venceHoy = tracking.diasParaVencer === 0 && !cuentaPagada;
@@ -327,6 +345,19 @@ export default async function CuentaPage({
               </div>
 
               <div className="flex flex-col gap-2 sm:flex-row">
+                <EditCreditButton
+                  credit={{
+                    id: credito.id,
+                    tipo: credito.tipo,
+                    fechaInicio: credito.fechaInicio.toISOString().slice(0, 10),
+                    frecuenciaDias: credito.frecuenciaDias,
+                    total: credito.total,
+                    cantidadCuotas: credito.cantidadCuotas,
+                    montoPagado: credito.montoPagado,
+                    vendedorId: credito.vendedorId,
+                  }}
+                  vendedores={vendedores}
+                />
                 {credito.activo && !cuentaPagada && (
                   <RegistrarCobroButton
                     creditId={credito.id}
