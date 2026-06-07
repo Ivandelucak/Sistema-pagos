@@ -436,6 +436,9 @@ export default async function CuentaPage({
                           paymentId={pago.id}
                           currentAmount={pago.monto}
                           currentMethod={pago.metodoPago}
+                          currentDate={pago.fechaPago
+                            .toISOString()
+                            .slice(0, 10)}
                         />
                         <DeletePaymentButton paymentId={pago.id} />
                       </div>

@@ -16,14 +16,26 @@ function formatMetodoPago(value: MetodoPago) {
   return value === "EFECTIVO" ? "Efectivo" : "Transferencia";
 }
 
+function formatInputDateLabel(value: string) {
+  if (!value) return "-";
+
+  const [year, month, day] = value.split("-");
+
+  if (!year || !month || !day) return value;
+
+  return `${day}/${month}/${year}`;
+}
+
 export default function EditPaymentButton({
   paymentId,
   currentAmount,
   currentMethod = "EFECTIVO",
+  currentDate,
 }: {
   paymentId: number;
   currentAmount: number;
   currentMethod?: MetodoPago;
+  currentDate: string;
 }) {
   const router = useRouter();
 
@@ -31,6 +43,7 @@ export default function EditPaymentButton({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [monto, setMonto] = useState(String(currentAmount));
   const [metodoPago, setMetodoPago] = useState<MetodoPago>(currentMethod);
+  const [fechaPago, setFechaPago] = useState(currentDate);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +56,9 @@ export default function EditPaymentButton({
   }, [parsedMonto, currentAmount]);
 
   const hasChanges =
-    parsedMonto !== currentAmount || metodoPago !== currentMethod;
+    parsedMonto !== currentAmount ||
+    metodoPago !== currentMethod ||
+    fechaPago !== currentDate;
 
   function closeModal() {
     if (loading) return;
@@ -53,6 +68,7 @@ export default function EditPaymentButton({
     setError("");
     setMonto(String(currentAmount));
     setMetodoPago(currentMethod);
+    setFechaPago(currentDate);
   }
 
   function askConfirm(e: React.FormEvent<HTMLFormElement>) {
@@ -61,6 +77,11 @@ export default function EditPaymentButton({
 
     if (!Number.isFinite(parsedMonto) || parsedMonto <= 0) {
       setError("Ingresá un monto válido.");
+      return;
+    }
+
+    if (!fechaPago) {
+      setError("Ingresá una fecha válida.");
       return;
     }
 
@@ -84,6 +105,7 @@ export default function EditPaymentButton({
       body: JSON.stringify({
         monto: parsedMonto,
         metodoPago,
+        fechaPago,
       }),
     });
 
@@ -122,7 +144,7 @@ export default function EditPaymentButton({
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                Modificá el monto o el método registrado. La cuenta se
+                Modificá el monto, método o fecha registrada. La cuenta se
                 recalculará automáticamente.
               </p>
             </div>
@@ -177,6 +199,27 @@ export default function EditPaymentButton({
                 </p>
               </div>
 
+              <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <label className="text-sm font-medium text-slate-700">
+                  Fecha del cobro
+                </label>
+
+                <input
+                  type="date"
+                  value={fechaPago}
+                  onChange={(e) => {
+                    setFechaPago(e.target.value);
+                    setError("");
+                  }}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
+                />
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Esta fecha define en qué día figura el cobro dentro del
+                  historial y los reportes.
+                </p>
+              </div>
+
               <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
                 <p className="text-sm font-medium text-slate-700">
                   Método de pago
@@ -220,6 +263,13 @@ export default function EditPaymentButton({
                     {formatMetodoPago(metodoPago)}
                   </span>
                 </p>
+
+                <p className="mt-1 text-sm text-slate-600">
+                  Fecha:{" "}
+                  <span className="font-semibold text-slate-900">
+                    {formatInputDateLabel(fechaPago)}
+                  </span>
+                </p>
               </div>
 
               {error && (
@@ -258,6 +308,8 @@ export default function EditPaymentButton({
             currentAmount,
           )} a ${formatMoney(parsedMonto)} con método ${formatMetodoPago(
             metodoPago,
+          )} y fecha ${formatInputDateLabel(
+            fechaPago,
           )}? La cuenta se recalculará automáticamente.`}
           confirmText="Aceptar"
           loading={loading}

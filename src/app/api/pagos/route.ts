@@ -1,3 +1,5 @@
+//src/app/api/pagos/route.ts
+
 import { NextResponse } from "next/server";
 import { registerPayment, type PaymentMethodValue } from "@/lib/payments";
 import { requireAdmin } from "@/lib/auth";

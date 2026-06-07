@@ -17,6 +17,16 @@ function parseMetodoPago(value: unknown): MetodoPago | null {
   return null;
 }
 
+function parseInputDate(value: unknown) {
+  if (typeof value !== "string") return null;
+
+  const [year, month, day] = value.split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day);
+}
+
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -73,6 +83,7 @@ export async function PATCH(
     const body = await req.json();
     const monto = Number(body.monto);
     const metodoPago = parseMetodoPago(body.metodoPago);
+    const fechaPago = parseInputDate(body.fechaPago);
 
     if (!Number.isInteger(paymentId)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
@@ -80,6 +91,13 @@ export async function PATCH(
 
     if (!Number.isFinite(monto) || monto <= 0) {
       return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
+    }
+
+    if (!fechaPago) {
+      return NextResponse.json(
+        { error: "Fecha de pago inválida" },
+        { status: 400 },
+      );
     }
 
     if (!metodoPago) {
@@ -132,6 +150,7 @@ export async function PATCH(
       data: {
         monto,
         metodoPago,
+        fechaPago,
       },
     });
 
