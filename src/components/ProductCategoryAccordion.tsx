@@ -9,7 +9,7 @@ type Product = {
   code: string;
   name: string;
   brand: string | null;
-  cost: number;
+  cost: number | null;
   cashPrice: number;
   financedPrice: number;
   stock: number;
@@ -109,8 +109,9 @@ export default function ProductCategoryAccordion({
 
             return (
               <div
+                id={`producto-${product.id}`}
                 key={product.id}
-                className={`grid gap-4 px-5 py-4 transition-colors md:grid-cols-[72px_1.2fr_0.7fr_0.7fr_0.7fr_0.55fr_0.8fr] md:items-center ${rowClass}`}
+                className={`scroll-mt-28 grid gap-4 px-5 py-4 transition-colors md:grid-cols-[72px_1.2fr_0.7fr_0.7fr_0.7fr_0.55fr_0.8fr] md:items-center ${rowClass}`}
               >
                 <div className="h-16 w-16 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
                   {product.imageUrl ? (
@@ -143,7 +144,9 @@ export default function ProductCategoryAccordion({
                   )}
                 </div>
 
-                {isAdmin && <PriceInfo label="Costo" value={product.cost} />}
+                {isAdmin && product.cost !== null && (
+                  <PriceInfo label="Costo" value={product.cost} />
+                )}
 
                 <PriceInfo label="Contado" value={product.cashPrice} />
 

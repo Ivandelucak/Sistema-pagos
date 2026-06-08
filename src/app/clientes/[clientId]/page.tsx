@@ -38,6 +38,17 @@ export default async function ClientePage({
       credits: {
         include: {
           vendedor: true,
+          products: {
+            orderBy: {
+              id: "asc",
+            },
+            select: {
+              id: true,
+              quantity: true,
+              productCodeSnapshot: true,
+              productNameSnapshot: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -310,6 +321,12 @@ function CuentaSection({
       id: number;
       nombre: string;
     };
+    products: Array<{
+      id: number;
+      quantity: number;
+      productCodeSnapshot: string;
+      productNameSnapshot: string;
+    }>;
   }>;
   finalizadas?: boolean;
   isAdmin?: boolean;
@@ -368,6 +385,14 @@ function CuentaSection({
                 <p className="mt-1 text-sm text-slate-500">
                   Vendedor de cuenta: {cuenta.vendedor.nombre}
                 </p>
+                {cuenta.products.length > 0 && (
+                  <p className="mt-1 text-sm text-slate-500">
+                    <span className="font-medium text-slate-600">
+                      Productos:
+                    </span>{" "}
+                    {formatCreditProducts(cuenta.products)}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -469,6 +494,28 @@ function FilterLink({
       {children}
     </Link>
   );
+}
+
+function formatCreditProducts(
+  products: Array<{
+    quantity: number;
+    productCodeSnapshot: string;
+    productNameSnapshot: string;
+  }>,
+) {
+  const visibleProducts = products.slice(0, 2).map((product) => {
+    const quantityLabel = product.quantity > 1 ? ` x${product.quantity}` : "";
+
+    return `${product.productCodeSnapshot} ${product.productNameSnapshot}${quantityLabel}`;
+  });
+
+  const remaining = products.length - visibleProducts.length;
+
+  if (remaining > 0) {
+    return `${visibleProducts.join(" · ")} · +${remaining} más`;
+  }
+
+  return visibleProducts.join(" · ");
 }
 
 function StateMessage({ title }: { title: string }) {

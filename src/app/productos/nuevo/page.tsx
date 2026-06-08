@@ -1,38 +1,45 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import ProductForm from "@/components/ProductForm";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export default async function NuevoProductoPage() {
-  await requireAdmin();
+  try {
+    await requireAdmin();
+  } catch {
+    redirect("/login");
+  }
 
-  const categories = await prisma.productCategory.findMany({
-    where: {
-      active: true,
-    },
-    select: {
-      id: true,
-      codePrefix: true,
-      name: true,
-    },
-    orderBy: {
-      displayOrder: "asc",
-    },
-  });
-
-  const brandsRaw = await prisma.stockProduct.findMany({
-    where: {
-      brand: {
-        not: null,
+  const [categories, brandsRaw] = await Promise.all([
+    prisma.productCategory.findMany({
+      where: {
+        active: true,
       },
-    },
-    select: {
-      brand: true,
-    },
-    orderBy: {
-      brand: "asc",
-    },
-  });
+      select: {
+        id: true,
+        codePrefix: true,
+        name: true,
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    }),
+
+    prisma.stockProduct.findMany({
+      where: {
+        brand: {
+          not: null,
+        },
+      },
+      select: {
+        brand: true,
+      },
+      orderBy: {
+        brand: "asc",
+      },
+    }),
+  ]);
 
   const brandSuggestions = Array.from(
     new Set(

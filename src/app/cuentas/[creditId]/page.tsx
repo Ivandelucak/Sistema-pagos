@@ -41,6 +41,22 @@ export default async function CuentaPage({
           fechaPago: "desc",
         },
       },
+      products: {
+        orderBy: {
+          id: "asc",
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              imageUrl: true,
+              active: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -105,6 +121,8 @@ export default async function CuentaPage({
       Math.min(Math.max(cuotaNumero, 1), credito.cantidadCuotas),
     );
   }
+
+  const productosAsociados = credito.products;
 
   const movimientosOrdenados = [...credito.payments].sort((a, b) => {
     const cuotaA = paymentCuotaMap.get(a.id) ?? 1;
@@ -224,6 +242,33 @@ export default async function CuentaPage({
             value={formatMoney(credito.valorCuota)}
           />
         </div>
+
+        {productosAsociados.length > 0 && (
+          <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-950">
+                  Productos asociados
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Productos vinculados a esta cuenta al momento de la venta.
+                </p>
+              </div>
+
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                {productosAsociados.length} producto
+                {productosAsociados.length === 1 ? "" : "s"}
+              </span>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {productosAsociados.map((item) => (
+                <ProductSaleCard key={item.id} item={item} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -567,6 +612,106 @@ function Badge({ label }: { label: string }) {
     <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
       {label}
     </span>
+  );
+}
+
+function ProductSaleCard({
+  item,
+}: {
+  item: {
+    id: number;
+    quantity: number;
+    productCodeSnapshot: string;
+    productNameSnapshot: string;
+    product: {
+      id: number;
+      code: string;
+      name: string;
+      imageUrl: string | null;
+      active: boolean;
+    };
+  };
+}) {
+  const productHref = `/productos?q=${encodeURIComponent(
+    item.productCodeSnapshot,
+  )}#producto-${item.product.id}`;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:bg-slate-100">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 gap-3">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+            {item.product.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.product.imageUrl}
+                alt={item.productNameSnapshot}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-slate-400">
+                Sin img
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-bold text-slate-500">
+                {item.productCodeSnapshot}
+              </p>
+
+              {item.quantity > 1 && (
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-bold text-slate-600 ring-1 ring-slate-200">
+                  x{item.quantity}
+                </span>
+              )}
+
+              {!item.product.active && (
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                  DADO DE BAJA
+                </span>
+              )}
+            </div>
+
+            <p className="mt-1 break-words text-base font-bold leading-5 text-slate-950">
+              {item.productNameSnapshot}
+            </p>
+          </div>
+        </div>
+
+        {item.product.active ? (
+          <Link
+            href={productHref}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-center text-sm font-semibold text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-950 hover:shadow-md active:scale-[0.98]"
+          >
+            Ver producto
+          </Link>
+        ) : (
+          <span className="rounded-xl bg-slate-200 px-4 py-2 text-center text-sm font-semibold text-slate-500">
+            No disponible
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProductMiniInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-1 font-bold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function ProductTotalInfo({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-slate-400">{label}</p>
+      <p className="mt-1 text-xl font-bold text-white">{value}</p>
+    </div>
   );
 }
 

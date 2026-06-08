@@ -1,3 +1,5 @@
+//src/components/CreditStatusButton.tsx
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -15,29 +17,48 @@ export default function CreditStatusButton({
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleConfirm() {
-    setLoading(true);
+    try {
+      setLoading(true);
+      setError("");
 
-    await fetch(`/api/creditos/${creditId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        activo: !activo,
-      }),
-    });
+      const res = await fetch(`/api/creditos/${creditId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          activo: !activo,
+        }),
+      });
 
-    setLoading(false);
-    setOpen(false);
-    router.refresh();
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error ?? "No se pudo actualizar la cuenta.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(false);
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError("Ocurrió un error al actualizar la cuenta.");
+      setLoading(false);
+    }
   }
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        type="button"
+        onClick={() => {
+          setError("");
+          setOpen(true);
+        }}
         className={`inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-[0.98] ${
           activo
             ? "border border-red-200 bg-white text-red-700 hover:border-red-300 hover:bg-red-50"
@@ -52,15 +73,25 @@ export default function CreditStatusButton({
           title={activo ? "Dar de baja cuenta" : "Reactivar cuenta"}
           description={
             activo
-              ? "La cuenta se ocultará de los listados operativos, pero conservará su historial, pagos y datos."
-              : "La cuenta volverá a aparecer en los listados operativos."
+              ? "La cuenta se ocultará de los listados operativos, conservará su historial y, si tiene productos asociados, el stock se devolverá automáticamente."
+              : "La cuenta volverá a aparecer en los listados operativos. Si tiene productos asociados, el sistema volverá a descontar stock y validará disponibilidad."
           }
           confirmText={activo ? "Dar de baja" : "Reactivar"}
           danger={activo}
           loading={loading}
           onConfirm={handleConfirm}
-          onCancel={() => setOpen(false)}
+          onCancel={() => {
+            if (loading) return;
+            setOpen(false);
+            setError("");
+          }}
         />
+      )}
+
+      {error && (
+        <div className="mt-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+          {error}
+        </div>
       )}
     </>
   );

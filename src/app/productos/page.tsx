@@ -103,7 +103,10 @@ export default async function ProductosPage({
 
       return {
         ...category,
-        products: filteredProducts,
+        products: filteredProducts.map((product) => ({
+          ...product,
+          cost: isAdmin ? product.cost : null,
+        })),
       };
     })
     .filter((category) => {
