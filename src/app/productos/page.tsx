@@ -1,3 +1,4 @@
+//src/app/productos/page.tsx
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -165,6 +166,13 @@ export default async function ProductosPage({
 
           {isAdmin && (
             <div className="flex flex-col gap-2 sm:flex-row">
+              <Link
+                href="/productos/importar"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:text-slate-950 hover:shadow-md active:scale-[0.98]"
+              >
+                Importar Excel
+              </Link>
+
               <CreateProductCategoryButton nextCodePrefix={nextCodePrefix} />
 
               <Link
