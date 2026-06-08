@@ -1,3 +1,4 @@
+//src/app/clientes/[clientId]/nueva-cuenta/page.tsx
 import Link from "next/link";
 import NuevaCuentaForm from "@/components/NuevaCuentaForm";
 import { requireAdmin } from "@/lib/auth";

@@ -54,7 +54,11 @@ export const ModelName = {
   User: 'User',
   Client: 'Client',
   Credit: 'Credit',
-  Payment: 'Payment'
+  Payment: 'Payment',
+  ProductCategory: 'ProductCategory',
+  StockProduct: 'StockProduct',
+  CreditProduct: 'CreditProduct',
+  StockMovement: 'StockMovement'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -137,6 +141,74 @@ export const PaymentScalarFieldEnum = {
 export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
 
 
+export const ProductCategoryScalarFieldEnum = {
+  id: 'id',
+  codePrefix: 'codePrefix',
+  name: 'name',
+  slug: 'slug',
+  displayOrder: 'displayOrder',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProductCategoryScalarFieldEnum = (typeof ProductCategoryScalarFieldEnum)[keyof typeof ProductCategoryScalarFieldEnum]
+
+
+export const StockProductScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  slug: 'slug',
+  categoryId: 'categoryId',
+  brand: 'brand',
+  sourceWebCode: 'sourceWebCode',
+  cost: 'cost',
+  cashPrice: 'cashPrice',
+  financedPrice: 'financedPrice',
+  stock: 'stock',
+  lowStockAlert: 'lowStockAlert',
+  imageUrl: 'imageUrl',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type StockProductScalarFieldEnum = (typeof StockProductScalarFieldEnum)[keyof typeof StockProductScalarFieldEnum]
+
+
+export const CreditProductScalarFieldEnum = {
+  id: 'id',
+  creditId: 'creditId',
+  productId: 'productId',
+  quantity: 'quantity',
+  productCodeSnapshot: 'productCodeSnapshot',
+  productNameSnapshot: 'productNameSnapshot',
+  cashPriceSnapshot: 'cashPriceSnapshot',
+  financedPriceSnapshot: 'financedPriceSnapshot',
+  costSnapshot: 'costSnapshot',
+  createdAt: 'createdAt'
+} as const
+
+export type CreditProductScalarFieldEnum = (typeof CreditProductScalarFieldEnum)[keyof typeof CreditProductScalarFieldEnum]
+
+
+export const StockMovementScalarFieldEnum = {
+  id: 'id',
+  productId: 'productId',
+  type: 'type',
+  quantity: 'quantity',
+  previousStock: 'previousStock',
+  newStock: 'newStock',
+  creditId: 'creditId',
+  userId: 'userId',
+  note: 'note',
+  createdAt: 'createdAt'
+} as const
+
+export type StockMovementScalarFieldEnum = (typeof StockMovementScalarFieldEnum)[keyof typeof StockMovementScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -178,4 +250,40 @@ export const CreditOrderByRelevanceFieldEnum = {
 } as const
 
 export type CreditOrderByRelevanceFieldEnum = (typeof CreditOrderByRelevanceFieldEnum)[keyof typeof CreditOrderByRelevanceFieldEnum]
+
+
+export const ProductCategoryOrderByRelevanceFieldEnum = {
+  codePrefix: 'codePrefix',
+  name: 'name',
+  slug: 'slug'
+} as const
+
+export type ProductCategoryOrderByRelevanceFieldEnum = (typeof ProductCategoryOrderByRelevanceFieldEnum)[keyof typeof ProductCategoryOrderByRelevanceFieldEnum]
+
+
+export const StockProductOrderByRelevanceFieldEnum = {
+  code: 'code',
+  name: 'name',
+  slug: 'slug',
+  brand: 'brand',
+  sourceWebCode: 'sourceWebCode',
+  imageUrl: 'imageUrl'
+} as const
+
+export type StockProductOrderByRelevanceFieldEnum = (typeof StockProductOrderByRelevanceFieldEnum)[keyof typeof StockProductOrderByRelevanceFieldEnum]
+
+
+export const CreditProductOrderByRelevanceFieldEnum = {
+  productCodeSnapshot: 'productCodeSnapshot',
+  productNameSnapshot: 'productNameSnapshot'
+} as const
+
+export type CreditProductOrderByRelevanceFieldEnum = (typeof CreditProductOrderByRelevanceFieldEnum)[keyof typeof CreditProductOrderByRelevanceFieldEnum]
+
+
+export const StockMovementOrderByRelevanceFieldEnum = {
+  note: 'note'
+} as const
+
+export type StockMovementOrderByRelevanceFieldEnum = (typeof StockMovementOrderByRelevanceFieldEnum)[keyof typeof StockMovementOrderByRelevanceFieldEnum]
 

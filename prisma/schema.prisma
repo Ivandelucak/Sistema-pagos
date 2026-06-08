@@ -15,9 +15,10 @@ model User {
   rol      Role
   activo   Boolean @default(true)
 
-  clients  Client[]
-  credits  Credit[]
-  payments Payment[]
+  clients        Client[]
+  credits        Credit[]
+  payments       Payment[]
+  stockMovements StockMovement[]
 
   createdAt DateTime @default(now())
 
@@ -25,16 +26,16 @@ model User {
 }
 
 model Client {
-  id              Int     @id @default(autoincrement())
+  id              Int                   @id @default(autoincrement())
   nombre          String
   telefono        String?
   direccion       String?
-  observacion     String? @db.Text
+  observacion     String?               @db.Text
   observacionTipo ClientObservationType @default(NORMAL)
-  activo          Boolean @default(true)
+  activo          Boolean               @default(true)
 
   vendedorId Int
-  vendedor   User @relation(fields: [vendedorId], references: [id]) 
+  vendedor   User @relation(fields: [vendedorId], references: [id])
 
   credits Credit[]
 
@@ -51,7 +52,7 @@ model Credit {
   fechaInicio    DateTime
   tipo           String
   frecuenciaDias Int
-  cantidadCuotas Int @default(1)
+  cantidadCuotas Int      @default(1)
   valorCuota     Float
 
   total       Float
@@ -61,18 +62,20 @@ model Credit {
   estado String
   activo Boolean @default(true)
 
-  proximoVencimiento  DateTime?
-  cuotasPagadas       Int      @default(0)
-  cuotasRestantes     Int      @default(0)
+  proximoVencimiento DateTime?
+  cuotasPagadas      Int       @default(0)
+  cuotasRestantes    Int       @default(0)
 
   client   Client @relation(fields: [clientId], references: [id])
   vendedor User   @relation(fields: [vendedorId], references: [id])
 
-  payments Payment[]
+  payments       Payment[]
+  products       CreditProduct[]
+  stockMovements StockMovement[]
 
   createdAt DateTime @default(now())
 
-   @@map("credit")
+  @@map("credit")
 }
 
 model Payment {
@@ -92,6 +95,97 @@ model Payment {
   @@map("payment")
 }
 
+model ProductCategory {
+  id           Int     @id @default(autoincrement())
+  codePrefix   String  @unique
+  name         String
+  slug         String  @unique
+  displayOrder Int     @default(0)
+  active       Boolean @default(true)
+
+  products StockProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_category")
+}
+
+model StockProduct {
+  id         Int     @id @default(autoincrement())
+  code       String  @unique
+  name       String
+  slug       String?
+  categoryId Int
+
+  brand         String?
+  sourceWebCode String?
+
+  cost          Float
+  cashPrice     Float
+  financedPrice Float
+
+  stock         Int @default(0)
+  lowStockAlert Int @default(2)
+
+  imageUrl String? @db.Text
+  active   Boolean @default(true)
+
+  category       ProductCategory @relation(fields: [categoryId], references: [id])
+  creditProducts CreditProduct[]
+  stockMovements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("stock_product")
+}
+
+model CreditProduct {
+  id        Int @id @default(autoincrement())
+  creditId  Int
+  productId Int
+
+  quantity Int @default(1)
+
+  productCodeSnapshot   String
+  productNameSnapshot   String
+  cashPriceSnapshot     Float
+  financedPriceSnapshot Float
+  costSnapshot          Float?
+
+  credit  Credit       @relation(fields: [creditId], references: [id])
+  product StockProduct @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("credit_product")
+}
+
+model StockMovement {
+  id        Int @id @default(autoincrement())
+  productId Int
+
+  type StockMovementType
+
+  quantity      Int
+  previousStock Int
+  newStock      Int
+
+  creditId Int?
+  userId   Int?
+
+  note String? @db.Text
+
+  product StockProduct @relation(fields: [productId], references: [id])
+  credit  Credit?      @relation(fields: [creditId], references: [id])
+  user    User?        @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("stock_movement")
+}
+
 enum PaymentMethod {
   EFECTIVO
   TRANSFERENCIA
@@ -105,4 +199,12 @@ enum Role {
 enum ClientObservationType {
   NORMAL
   ALERTA
+}
+
+enum StockMovementType {
+  INITIAL
+  ADJUSTMENT
+  SALE
+  RETURN
+  EDIT
 }

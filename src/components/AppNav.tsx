@@ -19,6 +19,11 @@ const navItems = [
     label: "Clientes",
     mobileLabel: "Clientes",
   },
+  {
+    href: "/productos",
+    label: "Productos",
+    mobileLabel: "Productos",
+  },
 ];
 
 export default function AppNav() {

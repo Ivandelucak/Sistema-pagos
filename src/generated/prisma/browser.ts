@@ -37,3 +37,23 @@ export type Credit = Prisma.CreditModel
  * 
  */
 export type Payment = Prisma.PaymentModel
+/**
+ * Model ProductCategory
+ * 
+ */
+export type ProductCategory = Prisma.ProductCategoryModel
+/**
+ * Model StockProduct
+ * 
+ */
+export type StockProduct = Prisma.StockProductModel
+/**
+ * Model CreditProduct
+ * 
+ */
+export type CreditProduct = Prisma.CreditProductModel
+/**
+ * Model StockMovement
+ * 
+ */
+export type StockMovement = Prisma.StockMovementModel

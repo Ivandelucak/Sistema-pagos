@@ -31,3 +31,14 @@ export const ClientObservationType = {
 } as const
 
 export type ClientObservationType = (typeof ClientObservationType)[keyof typeof ClientObservationType]
+
+
+export const StockMovementType = {
+  INITIAL: 'INITIAL',
+  ADJUSTMENT: 'ADJUSTMENT',
+  SALE: 'SALE',
+  RETURN: 'RETURN',
+  EDIT: 'EDIT'
+} as const
+
+export type StockMovementType = (typeof StockMovementType)[keyof typeof StockMovementType]
