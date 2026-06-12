@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type WheelEvent } from "react";
 import { useRouter } from "next/navigation";
+
+function preventNumberWheel(e: WheelEvent<HTMLInputElement>) {
+  e.currentTarget.blur();
+}
 
 export default function StockAdjustButton({
   productId,
@@ -140,6 +144,7 @@ export default function StockAdjustButton({
                     min="0"
                     step="1"
                     value={stock}
+                    onWheel={preventNumberWheel}
                     onChange={(e) => setStock(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
                   />
@@ -154,6 +159,7 @@ export default function StockAdjustButton({
                     min="0"
                     step="1"
                     value={lowStockAlert}
+                    onWheel={preventNumberWheel}
                     onChange={(e) => setLowStockAlert(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 outline-none transition-colors focus:border-slate-900"
                   />
