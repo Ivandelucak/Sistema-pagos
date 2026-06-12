@@ -10,6 +10,7 @@ import EditPaymentButton from "@/components/EditPaymentButton";
 import DeletePaymentButton from "@/components/DeletePaymentButton";
 import BackButton from "@/components/BackButton";
 import EditCreditButton from "@/components/EditCreditButton";
+import EditCreditProductsButton from "@/components/EditCreditProductsButton";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,8 @@ export default async function CuentaPage({
               name: true,
               imageUrl: true,
               active: true,
+              stock: true,
+              lowStockAlert: true,
             },
           },
         },
@@ -243,7 +246,7 @@ export default async function CuentaPage({
           />
         </div>
 
-        {productosAsociados.length > 0 && (
+        {(productosAsociados.length > 0 || isAdmin) && (
           <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
@@ -252,20 +255,36 @@ export default async function CuentaPage({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Productos vinculados a esta cuenta al momento de la venta.
+                  Productos vinculados a esta cuenta.
                 </p>
               </div>
 
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                {productosAsociados.length} producto
-                {productosAsociados.length === 1 ? "" : "s"}
-              </span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                {isAdmin && (
+                  <EditCreditProductsButton
+                    creditId={credito.id}
+                    creditActive={credito.activo}
+                    initialProducts={productosAsociados}
+                  />
+                )}
+
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-center text-xs font-bold text-slate-700">
+                  {productosAsociados.length} producto
+                  {productosAsociados.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
 
             <div className="mt-5 grid gap-3">
               {productosAsociados.map((item) => (
                 <ProductSaleCard key={item.id} item={item} />
               ))}
+
+              {productosAsociados.length === 0 && (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+                  Esta cuenta todavía no tiene productos asociados.
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -693,24 +712,6 @@ function ProductSaleCard({
           </span>
         )}
       </div>
-    </div>
-  );
-}
-
-function ProductMiniInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 font-bold text-slate-950">{value}</p>
-    </div>
-  );
-}
-
-function ProductTotalInfo({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-sm font-medium text-slate-400">{label}</p>
-      <p className="mt-1 text-xl font-bold text-white">{value}</p>
     </div>
   );
 }
