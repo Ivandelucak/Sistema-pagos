@@ -1,3 +1,4 @@
+//src/app/productos/[BproductId]/editar/page.tsx
 import Link from "next/link";
 import ProductForm from "@/components/ProductForm";
 import { requireAdmin } from "@/lib/auth";

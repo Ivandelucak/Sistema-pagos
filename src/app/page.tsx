@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 import HomeSearchFilter from "@/components/HomeSearchFilter";
 import PendingBalancesButton from "@/components/PendingBalancesButton";
+import { canViewPendingBalances } from "@/lib/balance-permissions";
 
 type HomeSort = "az" | "za" | "dueAsc" | "dueDesc";
 
@@ -47,6 +48,7 @@ export default async function Home({
   }>;
 }) {
   const user = await requireUser();
+  const canSeePendingBalances = canViewPendingBalances(user);
 
   if (user.rol === "VENDEDOR") {
     redirect("/hoy");
@@ -130,32 +132,88 @@ export default async function Home({
     }),
   ]);
 
-  const saldoPendienteTotal = saldoPendienteAggregate._sum.saldo ?? 0;
-  const cuentasConSaldoPendiente = saldoPendienteAggregate._count.id;
-  const clientesConSaldoPendienteCount = clientesConSaldoPendiente.length;
+  let saldoPendienteTotal = 0;
+  let clientesConSaldoPendienteCount = 0;
+  let cuentasConSaldoPendiente = 0;
 
-  const saldosPorVendedorMap = new Map(
-    saldosAgrupadosPorVendedor.map((item) => [
-      item.vendedorId,
-      {
-        saldo: item._sum.saldo ?? 0,
-        cuentas: item._count.id,
+  let saldosPorVendedor: Array<{
+    id: number;
+    nombre: string;
+    saldo: number;
+    cuentas: number;
+  }> = [];
+
+  if (canSeePendingBalances) {
+    const saldoWhere = {
+      activo: true,
+      saldo: {
+        gt: 0,
       },
-    ]),
-  );
+    };
 
-  const saldosPorVendedor = vendedores
-    .map((vendedor) => {
-      const data = saldosPorVendedorMap.get(vendedor.id);
+    const [
+      saldoPendienteAggregate,
+      clientesConSaldoPendiente,
+      saldosAgrupadosPorVendedor,
+    ] = await Promise.all([
+      prisma.credit.aggregate({
+        where: saldoWhere,
+        _sum: {
+          saldo: true,
+        },
+        _count: {
+          id: true,
+        },
+      }),
 
-      return {
-        id: vendedor.id,
-        nombre: vendedor.nombre,
-        saldo: data?.saldo ?? 0,
-        cuentas: data?.cuentas ?? 0,
-      };
-    })
-    .sort((a, b) => b.saldo - a.saldo);
+      prisma.credit.findMany({
+        where: saldoWhere,
+        select: {
+          clientId: true,
+        },
+        distinct: ["clientId"],
+      }),
+
+      prisma.credit.groupBy({
+        by: ["vendedorId"],
+        where: saldoWhere,
+        _sum: {
+          saldo: true,
+        },
+        _count: {
+          id: true,
+        },
+      }),
+    ]);
+
+    saldoPendienteTotal = saldoPendienteAggregate._sum.saldo ?? 0;
+    cuentasConSaldoPendiente = saldoPendienteAggregate._count.id;
+    clientesConSaldoPendienteCount = clientesConSaldoPendiente.length;
+
+    const saldosPorVendedorMap = new Map(
+      saldosAgrupadosPorVendedor.map((item) => [
+        item.vendedorId,
+        {
+          saldo: item._sum.saldo ?? 0,
+          cuentas: item._count.id,
+        },
+      ]),
+    );
+
+    saldosPorVendedor = vendedores
+      .map((vendedor) => {
+        const data = saldosPorVendedorMap.get(vendedor.id);
+
+        return {
+          id: vendedor.id,
+          nombre: vendedor.nombre,
+          saldo: data?.saldo ?? 0,
+          cuentas: data?.cuentas ?? 0,
+        };
+      })
+      .filter((vendedor) => vendedor.saldo > 0 || vendedor.cuentas > 0)
+      .sort((a, b) => b.saldo - a.saldo);
+  }
 
   function buildVendedorHref(nextVendedorId?: number) {
     const params = new URLSearchParams();
@@ -263,12 +321,14 @@ export default async function Home({
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <PendingBalancesButton
-              saldoPendienteTotal={saldoPendienteTotal}
-              clientesConSaldoPendiente={clientesConSaldoPendienteCount}
-              cuentasConSaldoPendiente={cuentasConSaldoPendiente}
-              saldosPorVendedor={saldosPorVendedor}
-            />
+            {canSeePendingBalances && (
+              <PendingBalancesButton
+                saldoPendienteTotal={saldoPendienteTotal}
+                clientesConSaldoPendiente={clientesConSaldoPendienteCount}
+                cuentasConSaldoPendiente={cuentasConSaldoPendiente}
+                saldosPorVendedor={saldosPorVendedor}
+              />
+            )}
 
             <Link
               href="/clientes/nuevo"
