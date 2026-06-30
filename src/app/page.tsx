@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 import HomeSearchFilter from "@/components/HomeSearchFilter";
+import PendingBalancesButton from "@/components/PendingBalancesButton";
 
 type HomeSort = "az" | "za" | "dueAsc" | "dueDesc";
 
@@ -28,6 +29,12 @@ function matchesSearch({
   if (!query) return true;
 
   return fields.some((field) => normalizeText(field ?? "").includes(query));
+}
+
+function formatMoney(value: number) {
+  return `$${value.toLocaleString("es-AR", {
+    maximumFractionDigits: 0,
+  })}`;
 }
 
 export default async function Home({
@@ -70,6 +77,97 @@ export default async function Home({
       nombre: "asc",
     },
   });
+
+  const vendedorSeleccionado = Number.isInteger(vendedorId)
+    ? (vendedores.find((vendedor) => vendedor.id === vendedorId) ?? null)
+    : null;
+
+  const saldoWhere = {
+    activo: true,
+    saldo: {
+      gt: 0,
+    },
+    ...(Number.isInteger(vendedorId) ? { vendedorId } : {}),
+  };
+
+  const [
+    saldoPendienteAggregate,
+    clientesConSaldoPendiente,
+    saldosAgrupadosPorVendedor,
+  ] = await Promise.all([
+    prisma.credit.aggregate({
+      where: saldoWhere,
+      _sum: {
+        saldo: true,
+      },
+      _count: {
+        id: true,
+      },
+    }),
+
+    prisma.credit.findMany({
+      where: saldoWhere,
+      select: {
+        clientId: true,
+      },
+      distinct: ["clientId"],
+    }),
+
+    prisma.credit.groupBy({
+      by: ["vendedorId"],
+      where: {
+        activo: true,
+        saldo: {
+          gt: 0,
+        },
+      },
+      _sum: {
+        saldo: true,
+      },
+      _count: {
+        id: true,
+      },
+    }),
+  ]);
+
+  const saldoPendienteTotal = saldoPendienteAggregate._sum.saldo ?? 0;
+  const cuentasConSaldoPendiente = saldoPendienteAggregate._count.id;
+  const clientesConSaldoPendienteCount = clientesConSaldoPendiente.length;
+
+  const saldosPorVendedorMap = new Map(
+    saldosAgrupadosPorVendedor.map((item) => [
+      item.vendedorId,
+      {
+        saldo: item._sum.saldo ?? 0,
+        cuentas: item._count.id,
+      },
+    ]),
+  );
+
+  const saldosPorVendedor = vendedores
+    .map((vendedor) => {
+      const data = saldosPorVendedorMap.get(vendedor.id);
+
+      return {
+        id: vendedor.id,
+        nombre: vendedor.nombre,
+        saldo: data?.saldo ?? 0,
+        cuentas: data?.cuentas ?? 0,
+      };
+    })
+    .sort((a, b) => b.saldo - a.saldo);
+
+  function buildVendedorHref(nextVendedorId?: number) {
+    const params = new URLSearchParams();
+
+    if (search) params.set("q", search);
+    if (sort !== "az") params.set("order", sort);
+    if (nextVendedorId) params.set("vendedorId", String(nextVendedorId));
+
+    const query = params.toString();
+
+    return query ? `/?${query}` : "/";
+  }
 
   const creditosBase = await prisma.credit.findMany({
     where: {
@@ -165,16 +263,23 @@ export default async function Home({
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
+            <PendingBalancesButton
+              saldoPendienteTotal={saldoPendienteTotal}
+              clientesConSaldoPendiente={clientesConSaldoPendienteCount}
+              cuentasConSaldoPendiente={cuentasConSaldoPendiente}
+              saldosPorVendedor={saldosPorVendedor}
+            />
+
             <Link
-              href="/clientes/nuevo?from=/"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white hover:bg-slate-800"
+              href="/clientes/nuevo"
+              className="rounded-lg bg-slate-900 px-4 py-2 text-center text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md active:scale-[0.98]"
             >
               Nuevo cliente
             </Link>
 
             <Link
               href="/clientes"
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-center text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
             >
               Clientes
             </Link>
@@ -318,6 +423,29 @@ function SummaryCard({
       <p
         className={`mt-2 text-2xl font-bold ${
           danger ? "text-red-600" : "text-slate-950"
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+function BalanceSummaryCard({
+  title,
+  value,
+  highlight,
+}: {
+  title: string;
+  value: number | string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
+      <p className="text-sm font-medium text-slate-500">{title}</p>
+
+      <p
+        className={`mt-2 text-2xl font-bold ${
+          highlight ? "text-red-600" : "text-slate-950"
         }`}
       >
         {value}
