@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type WheelEvent } from "react";
 import { useRouter } from "next/navigation";
 
 type Category = {
@@ -22,6 +22,9 @@ type ProductInitialData = {
   active: boolean;
 };
 
+const DEFAULT_CASH_MULTIPLIER = "1.35";
+const DEFAULT_FINANCING_MULTIPLIER = "1.65";
+
 function roundMoney(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.ceil(value);
@@ -30,6 +33,10 @@ function roundMoney(value: number) {
 function toInputValue(value: number) {
   if (!Number.isFinite(value)) return "";
   return String(roundMoney(value));
+}
+
+function preventNumberWheel(e: WheelEvent<HTMLInputElement>) {
+  e.currentTarget.blur();
 }
 
 export default function ProductForm({
@@ -54,12 +61,18 @@ export default function ProductForm({
   const [cost, setCost] = useState(
     initialData ? toInputValue(initialData.cost) : "",
   );
+  const [cashMultiplier, setCashMultiplier] = useState(DEFAULT_CASH_MULTIPLIER);
   const [cashPrice, setCashPrice] = useState(
     initialData ? toInputValue(initialData.cashPrice) : "",
   );
-  const [financingMultiplier, setFinancingMultiplier] = useState("1.65");
+  const [financingMultiplier, setFinancingMultiplier] = useState(
+    DEFAULT_FINANCING_MULTIPLIER,
+  );
   const [financedPrice, setFinancedPrice] = useState(
     initialData ? toInputValue(initialData.financedPrice) : "",
+  );
+  const [autoCalculatePrices, setAutoCalculatePrices] = useState(
+    mode === "create",
   );
   const [stock, setStock] = useState("0");
   const [lowStockAlert, setLowStockAlert] = useState(
@@ -70,6 +83,91 @@ export default function ProductForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  function recalculatePrices({
+    nextCost = cost,
+    nextCashPrice = cashPrice,
+    nextCashMultiplier = cashMultiplier,
+    nextFinancingMultiplier = financingMultiplier,
+    source,
+  }: {
+    nextCost?: string;
+    nextCashPrice?: string;
+    nextCashMultiplier?: string;
+    nextFinancingMultiplier?: string;
+    source:
+      | "cost"
+      | "cash"
+      | "cashMultiplier"
+      | "financingMultiplier"
+      | "toggle";
+  }) {
+    const parsedCost = Number(nextCost);
+    const parsedCashPrice = Number(nextCashPrice);
+    const parsedCashMultiplier = Number(nextCashMultiplier);
+    const parsedFinancingMultiplier = Number(nextFinancingMultiplier);
+
+    if (source === "cash") {
+      if (
+        Number.isFinite(parsedCashPrice) &&
+        parsedCashPrice > 0 &&
+        Number.isFinite(parsedCashMultiplier) &&
+        parsedCashMultiplier > 0
+      ) {
+        setCost(String(roundMoney(parsedCashPrice / parsedCashMultiplier)));
+      }
+
+      if (
+        Number.isFinite(parsedCashPrice) &&
+        parsedCashPrice > 0 &&
+        Number.isFinite(parsedFinancingMultiplier) &&
+        parsedFinancingMultiplier > 0
+      ) {
+        setFinancedPrice(
+          String(roundMoney(parsedCashPrice * parsedFinancingMultiplier)),
+        );
+      }
+
+      return;
+    }
+
+    if (
+      Number.isFinite(parsedCost) &&
+      parsedCost > 0 &&
+      Number.isFinite(parsedCashMultiplier) &&
+      parsedCashMultiplier > 0
+    ) {
+      const nextCalculatedCashPrice = roundMoney(
+        parsedCost * parsedCashMultiplier,
+      );
+
+      setCashPrice(String(nextCalculatedCashPrice));
+
+      if (
+        Number.isFinite(parsedFinancingMultiplier) &&
+        parsedFinancingMultiplier > 0
+      ) {
+        setFinancedPrice(
+          String(
+            roundMoney(nextCalculatedCashPrice * parsedFinancingMultiplier),
+          ),
+        );
+      }
+
+      return;
+    }
+
+    if (
+      Number.isFinite(parsedCashPrice) &&
+      parsedCashPrice > 0 &&
+      Number.isFinite(parsedFinancingMultiplier) &&
+      parsedFinancingMultiplier > 0
+    ) {
+      setFinancedPrice(
+        String(roundMoney(parsedCashPrice * parsedFinancingMultiplier)),
+      );
+    }
+  }
 
   async function uploadImage(file: File) {
     setError("");
@@ -122,50 +220,55 @@ export default function ProductForm({
   function updateFromCost(value: string) {
     setCost(value);
 
-    const parsedCost = Number(value);
-    const multiplier = Number(financingMultiplier);
+    if (autoCalculatePrices) {
+      recalculatePrices({
+        nextCost: value,
+        source: "cost",
+      });
+    }
+  }
 
-    if (!Number.isFinite(parsedCost) || parsedCost <= 0) return;
+  function updateFromCashMultiplier(value: string) {
+    setCashMultiplier(value);
 
-    const nextCashPrice = roundMoney(parsedCost * 1.35);
-    setCashPrice(String(nextCashPrice));
-
-    if (Number.isFinite(multiplier) && multiplier > 0) {
-      setFinancedPrice(String(roundMoney(nextCashPrice * multiplier)));
+    if (autoCalculatePrices) {
+      recalculatePrices({
+        nextCashMultiplier: value,
+        source: "cashMultiplier",
+      });
     }
   }
 
   function updateFromCashPrice(value: string) {
     setCashPrice(value);
 
-    const parsedCashPrice = Number(value);
-    const multiplier = Number(financingMultiplier);
-
-    if (!Number.isFinite(parsedCashPrice) || parsedCashPrice <= 0) return;
-
-    setCost(String(roundMoney(parsedCashPrice / 1.35)));
-
-    if (Number.isFinite(multiplier) && multiplier > 0) {
-      setFinancedPrice(String(roundMoney(parsedCashPrice * multiplier)));
+    if (autoCalculatePrices) {
+      recalculatePrices({
+        nextCashPrice: value,
+        source: "cash",
+      });
     }
   }
 
-  function updateFromMultiplier(value: string) {
+  function updateFromFinancingMultiplier(value: string) {
     setFinancingMultiplier(value);
 
-    const parsedCashPrice = Number(cashPrice);
-    const multiplier = Number(value);
-
-    if (
-      !Number.isFinite(parsedCashPrice) ||
-      parsedCashPrice <= 0 ||
-      !Number.isFinite(multiplier) ||
-      multiplier <= 0
-    ) {
-      return;
+    if (autoCalculatePrices) {
+      recalculatePrices({
+        nextFinancingMultiplier: value,
+        source: "financingMultiplier",
+      });
     }
+  }
 
-    setFinancedPrice(String(roundMoney(parsedCashPrice * multiplier)));
+  function handleAutoCalculateChange(checked: boolean) {
+    setAutoCalculatePrices(checked);
+
+    if (checked) {
+      recalculatePrices({
+        source: "toggle",
+      });
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -381,12 +484,26 @@ export default function ProductForm({
       </div>
 
       <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-        <h2 className="text-lg font-semibold text-slate-950">Precios</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-950">Precios</h2>
 
-        <p className="mt-1 text-sm text-slate-500">
-          Podés cargar costo o contado. El sistema calcula valores sugeridos,
-          pero el precio financiado puede editarse manualmente.
-        </p>
+            <p className="mt-1 text-sm text-slate-500">
+              Podés cargar los precios manualmente. Si activás el cálculo
+              automático, el sistema usa los multiplicadores como ayuda.
+            </p>
+          </div>
+
+          <label className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+            <input
+              type="checkbox"
+              checked={autoCalculatePrices}
+              onChange={(e) => handleAutoCalculateChange(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Calcular automático
+          </label>
+        </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <Input
@@ -395,7 +512,18 @@ export default function ProductForm({
             min="0"
             step="0.01"
             value={cost}
+            onWheel={preventNumberWheel}
             onChange={(e) => updateFromCost(e.target.value)}
+          />
+
+          <Input
+            label="Multiplicador contado"
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={cashMultiplier}
+            onWheel={preventNumberWheel}
+            onChange={(e) => updateFromCashMultiplier(e.target.value)}
           />
 
           <Input
@@ -404,6 +532,7 @@ export default function ProductForm({
             min="1"
             step="0.01"
             value={cashPrice}
+            onWheel={preventNumberWheel}
             onChange={(e) => updateFromCashPrice(e.target.value)}
           />
 
@@ -413,7 +542,8 @@ export default function ProductForm({
             min="0.01"
             step="0.01"
             value={financingMultiplier}
-            onChange={(e) => updateFromMultiplier(e.target.value)}
+            onWheel={preventNumberWheel}
+            onChange={(e) => updateFromFinancingMultiplier(e.target.value)}
           />
 
           <Input
@@ -422,8 +552,23 @@ export default function ProductForm({
             min="1"
             step="0.01"
             value={financedPrice}
+            onWheel={preventNumberWheel}
             onChange={(e) => setFinancedPrice(e.target.value)}
           />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-500">
+          {autoCalculatePrices ? (
+            <p>
+              El cálculo automático está activo. Al modificar costo, contado o
+              multiplicadores, el sistema recalcula los valores sugeridos.
+            </p>
+          ) : (
+            <p>
+              El cálculo automático está desactivado. Los valores se guardan
+              exactamente como los escribas.
+            </p>
+          )}
         </div>
       </div>
 
@@ -438,6 +583,7 @@ export default function ProductForm({
               min="0"
               step="1"
               value={stock}
+              onWheel={preventNumberWheel}
               onChange={(e) => setStock(e.target.value)}
             />
           )}
@@ -448,6 +594,7 @@ export default function ProductForm({
             min="0"
             step="1"
             value={lowStockAlert}
+            onWheel={preventNumberWheel}
             onChange={(e) => setLowStockAlert(e.target.value)}
           />
         </div>
