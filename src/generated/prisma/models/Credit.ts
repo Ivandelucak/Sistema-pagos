@@ -30,6 +30,7 @@ export type CreditAvgAggregateOutputType = {
   id: number | null
   clientId: number | null
   vendedorId: number | null
+  createdById: number | null
   frecuenciaDias: number | null
   cantidadCuotas: number | null
   valorCuota: number | null
@@ -44,6 +45,7 @@ export type CreditSumAggregateOutputType = {
   id: number | null
   clientId: number | null
   vendedorId: number | null
+  createdById: number | null
   frecuenciaDias: number | null
   cantidadCuotas: number | null
   valorCuota: number | null
@@ -58,6 +60,7 @@ export type CreditMinAggregateOutputType = {
   id: number | null
   clientId: number | null
   vendedorId: number | null
+  createdById: number | null
   fechaInicio: Date | null
   tipo: string | null
   frecuenciaDias: number | null
@@ -78,6 +81,7 @@ export type CreditMaxAggregateOutputType = {
   id: number | null
   clientId: number | null
   vendedorId: number | null
+  createdById: number | null
   fechaInicio: Date | null
   tipo: string | null
   frecuenciaDias: number | null
@@ -98,6 +102,7 @@ export type CreditCountAggregateOutputType = {
   id: number
   clientId: number
   vendedorId: number
+  createdById: number
   fechaInicio: number
   tipo: number
   frecuenciaDias: number
@@ -120,6 +125,7 @@ export type CreditAvgAggregateInputType = {
   id?: true
   clientId?: true
   vendedorId?: true
+  createdById?: true
   frecuenciaDias?: true
   cantidadCuotas?: true
   valorCuota?: true
@@ -134,6 +140,7 @@ export type CreditSumAggregateInputType = {
   id?: true
   clientId?: true
   vendedorId?: true
+  createdById?: true
   frecuenciaDias?: true
   cantidadCuotas?: true
   valorCuota?: true
@@ -148,6 +155,7 @@ export type CreditMinAggregateInputType = {
   id?: true
   clientId?: true
   vendedorId?: true
+  createdById?: true
   fechaInicio?: true
   tipo?: true
   frecuenciaDias?: true
@@ -168,6 +176,7 @@ export type CreditMaxAggregateInputType = {
   id?: true
   clientId?: true
   vendedorId?: true
+  createdById?: true
   fechaInicio?: true
   tipo?: true
   frecuenciaDias?: true
@@ -188,6 +197,7 @@ export type CreditCountAggregateInputType = {
   id?: true
   clientId?: true
   vendedorId?: true
+  createdById?: true
   fechaInicio?: true
   tipo?: true
   frecuenciaDias?: true
@@ -295,6 +305,7 @@ export type CreditGroupByOutputType = {
   id: number
   clientId: number
   vendedorId: number
+  createdById: number | null
   fechaInicio: Date
   tipo: string
   frecuenciaDias: number
@@ -338,6 +349,7 @@ export type CreditWhereInput = {
   id?: Prisma.IntFilter<"Credit"> | number
   clientId?: Prisma.IntFilter<"Credit"> | number
   vendedorId?: Prisma.IntFilter<"Credit"> | number
+  createdById?: Prisma.IntNullableFilter<"Credit"> | number | null
   fechaInicio?: Prisma.DateTimeFilter<"Credit"> | Date | string
   tipo?: Prisma.StringFilter<"Credit"> | string
   frecuenciaDias?: Prisma.IntFilter<"Credit"> | number
@@ -354,6 +366,7 @@ export type CreditWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Credit"> | Date | string
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
   vendedor?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   payments?: Prisma.PaymentListRelationFilter
   products?: Prisma.CreditProductListRelationFilter
   stockMovements?: Prisma.StockMovementListRelationFilter
@@ -363,6 +376,7 @@ export type CreditOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrderInput | Prisma.SortOrder
   fechaInicio?: Prisma.SortOrder
   tipo?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
@@ -379,6 +393,7 @@ export type CreditOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   client?: Prisma.ClientOrderByWithRelationInput
   vendedor?: Prisma.UserOrderByWithRelationInput
+  createdBy?: Prisma.UserOrderByWithRelationInput
   payments?: Prisma.PaymentOrderByRelationAggregateInput
   products?: Prisma.CreditProductOrderByRelationAggregateInput
   stockMovements?: Prisma.StockMovementOrderByRelationAggregateInput
@@ -392,6 +407,7 @@ export type CreditWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CreditWhereInput | Prisma.CreditWhereInput[]
   clientId?: Prisma.IntFilter<"Credit"> | number
   vendedorId?: Prisma.IntFilter<"Credit"> | number
+  createdById?: Prisma.IntNullableFilter<"Credit"> | number | null
   fechaInicio?: Prisma.DateTimeFilter<"Credit"> | Date | string
   tipo?: Prisma.StringFilter<"Credit"> | string
   frecuenciaDias?: Prisma.IntFilter<"Credit"> | number
@@ -408,6 +424,7 @@ export type CreditWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Credit"> | Date | string
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
   vendedor?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   payments?: Prisma.PaymentListRelationFilter
   products?: Prisma.CreditProductListRelationFilter
   stockMovements?: Prisma.StockMovementListRelationFilter
@@ -417,6 +434,7 @@ export type CreditOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrderInput | Prisma.SortOrder
   fechaInicio?: Prisma.SortOrder
   tipo?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
@@ -445,6 +463,7 @@ export type CreditScalarWhereWithAggregatesInput = {
   id?: Prisma.IntWithAggregatesFilter<"Credit"> | number
   clientId?: Prisma.IntWithAggregatesFilter<"Credit"> | number
   vendedorId?: Prisma.IntWithAggregatesFilter<"Credit"> | number
+  createdById?: Prisma.IntNullableWithAggregatesFilter<"Credit"> | number | null
   fechaInicio?: Prisma.DateTimeWithAggregatesFilter<"Credit"> | Date | string
   tipo?: Prisma.StringWithAggregatesFilter<"Credit"> | string
   frecuenciaDias?: Prisma.IntWithAggregatesFilter<"Credit"> | number
@@ -478,6 +497,7 @@ export type CreditCreateInput = {
   createdAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutCreditsInput
   vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
   products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
@@ -487,6 +507,7 @@ export type CreditUncheckedCreateInput = {
   id?: number
   clientId: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -523,6 +544,7 @@ export type CreditUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
   vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
   products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
@@ -532,6 +554,7 @@ export type CreditUncheckedUpdateInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -555,6 +578,7 @@ export type CreditCreateManyInput = {
   id?: number
   clientId: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -592,6 +616,7 @@ export type CreditUncheckedUpdateManyInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -628,6 +653,7 @@ export type CreditCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrder
   fechaInicio?: Prisma.SortOrder
   tipo?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
@@ -648,6 +674,7 @@ export type CreditAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
   cantidadCuotas?: Prisma.SortOrder
   valorCuota?: Prisma.SortOrder
@@ -662,6 +689,7 @@ export type CreditMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrder
   fechaInicio?: Prisma.SortOrder
   tipo?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
@@ -682,6 +710,7 @@ export type CreditMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrder
   fechaInicio?: Prisma.SortOrder
   tipo?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
@@ -702,6 +731,7 @@ export type CreditSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   vendedorId?: Prisma.SortOrder
+  createdById?: Prisma.SortOrder
   frecuenciaDias?: Prisma.SortOrder
   cantidadCuotas?: Prisma.SortOrder
   valorCuota?: Prisma.SortOrder
@@ -729,10 +759,24 @@ export type CreditCreateNestedManyWithoutVendedorInput = {
   connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
 }
 
+export type CreditCreateNestedManyWithoutCreatedByInput = {
+  create?: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput> | Prisma.CreditCreateWithoutCreatedByInput[] | Prisma.CreditUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.CreditCreateOrConnectWithoutCreatedByInput | Prisma.CreditCreateOrConnectWithoutCreatedByInput[]
+  createMany?: Prisma.CreditCreateManyCreatedByInputEnvelope
+  connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+}
+
 export type CreditUncheckedCreateNestedManyWithoutVendedorInput = {
   create?: Prisma.XOR<Prisma.CreditCreateWithoutVendedorInput, Prisma.CreditUncheckedCreateWithoutVendedorInput> | Prisma.CreditCreateWithoutVendedorInput[] | Prisma.CreditUncheckedCreateWithoutVendedorInput[]
   connectOrCreate?: Prisma.CreditCreateOrConnectWithoutVendedorInput | Prisma.CreditCreateOrConnectWithoutVendedorInput[]
   createMany?: Prisma.CreditCreateManyVendedorInputEnvelope
+  connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+}
+
+export type CreditUncheckedCreateNestedManyWithoutCreatedByInput = {
+  create?: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput> | Prisma.CreditCreateWithoutCreatedByInput[] | Prisma.CreditUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.CreditCreateOrConnectWithoutCreatedByInput | Prisma.CreditCreateOrConnectWithoutCreatedByInput[]
+  createMany?: Prisma.CreditCreateManyCreatedByInputEnvelope
   connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
 }
 
@@ -750,6 +794,20 @@ export type CreditUpdateManyWithoutVendedorNestedInput = {
   deleteMany?: Prisma.CreditScalarWhereInput | Prisma.CreditScalarWhereInput[]
 }
 
+export type CreditUpdateManyWithoutCreatedByNestedInput = {
+  create?: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput> | Prisma.CreditCreateWithoutCreatedByInput[] | Prisma.CreditUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.CreditCreateOrConnectWithoutCreatedByInput | Prisma.CreditCreateOrConnectWithoutCreatedByInput[]
+  upsert?: Prisma.CreditUpsertWithWhereUniqueWithoutCreatedByInput | Prisma.CreditUpsertWithWhereUniqueWithoutCreatedByInput[]
+  createMany?: Prisma.CreditCreateManyCreatedByInputEnvelope
+  set?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  disconnect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  delete?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  update?: Prisma.CreditUpdateWithWhereUniqueWithoutCreatedByInput | Prisma.CreditUpdateWithWhereUniqueWithoutCreatedByInput[]
+  updateMany?: Prisma.CreditUpdateManyWithWhereWithoutCreatedByInput | Prisma.CreditUpdateManyWithWhereWithoutCreatedByInput[]
+  deleteMany?: Prisma.CreditScalarWhereInput | Prisma.CreditScalarWhereInput[]
+}
+
 export type CreditUncheckedUpdateManyWithoutVendedorNestedInput = {
   create?: Prisma.XOR<Prisma.CreditCreateWithoutVendedorInput, Prisma.CreditUncheckedCreateWithoutVendedorInput> | Prisma.CreditCreateWithoutVendedorInput[] | Prisma.CreditUncheckedCreateWithoutVendedorInput[]
   connectOrCreate?: Prisma.CreditCreateOrConnectWithoutVendedorInput | Prisma.CreditCreateOrConnectWithoutVendedorInput[]
@@ -761,6 +819,20 @@ export type CreditUncheckedUpdateManyWithoutVendedorNestedInput = {
   connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
   update?: Prisma.CreditUpdateWithWhereUniqueWithoutVendedorInput | Prisma.CreditUpdateWithWhereUniqueWithoutVendedorInput[]
   updateMany?: Prisma.CreditUpdateManyWithWhereWithoutVendedorInput | Prisma.CreditUpdateManyWithWhereWithoutVendedorInput[]
+  deleteMany?: Prisma.CreditScalarWhereInput | Prisma.CreditScalarWhereInput[]
+}
+
+export type CreditUncheckedUpdateManyWithoutCreatedByNestedInput = {
+  create?: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput> | Prisma.CreditCreateWithoutCreatedByInput[] | Prisma.CreditUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.CreditCreateOrConnectWithoutCreatedByInput | Prisma.CreditCreateOrConnectWithoutCreatedByInput[]
+  upsert?: Prisma.CreditUpsertWithWhereUniqueWithoutCreatedByInput | Prisma.CreditUpsertWithWhereUniqueWithoutCreatedByInput[]
+  createMany?: Prisma.CreditCreateManyCreatedByInputEnvelope
+  set?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  disconnect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  delete?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  connect?: Prisma.CreditWhereUniqueInput | Prisma.CreditWhereUniqueInput[]
+  update?: Prisma.CreditUpdateWithWhereUniqueWithoutCreatedByInput | Prisma.CreditUpdateWithWhereUniqueWithoutCreatedByInput[]
+  updateMany?: Prisma.CreditUpdateManyWithWhereWithoutCreatedByInput | Prisma.CreditUpdateManyWithWhereWithoutCreatedByInput[]
   deleteMany?: Prisma.CreditScalarWhereInput | Prisma.CreditScalarWhereInput[]
 }
 
@@ -816,6 +888,14 @@ export type FloatFieldUpdateOperationsInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type CreditCreateNestedOneWithoutPaymentsInput = {
@@ -878,6 +958,7 @@ export type CreditCreateWithoutVendedorInput = {
   cuotasRestantes?: number
   createdAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
   products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
@@ -886,6 +967,7 @@ export type CreditCreateWithoutVendedorInput = {
 export type CreditUncheckedCreateWithoutVendedorInput = {
   id?: number
   clientId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -915,6 +997,61 @@ export type CreditCreateManyVendedorInputEnvelope = {
   skipDuplicates?: boolean
 }
 
+export type CreditCreateWithoutCreatedByInput = {
+  fechaInicio: Date | string
+  tipo: string
+  frecuenciaDias: number
+  cantidadCuotas?: number
+  valorCuota: number
+  total: number
+  montoPagado?: number
+  saldo: number
+  estado: string
+  activo?: boolean
+  proximoVencimiento?: Date | string | null
+  cuotasPagadas?: number
+  cuotasRestantes?: number
+  createdAt?: Date | string
+  client: Prisma.ClientCreateNestedOneWithoutCreditsInput
+  vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
+  products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
+  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
+}
+
+export type CreditUncheckedCreateWithoutCreatedByInput = {
+  id?: number
+  clientId: number
+  vendedorId: number
+  fechaInicio: Date | string
+  tipo: string
+  frecuenciaDias: number
+  cantidadCuotas?: number
+  valorCuota: number
+  total: number
+  montoPagado?: number
+  saldo: number
+  estado: string
+  activo?: boolean
+  proximoVencimiento?: Date | string | null
+  cuotasPagadas?: number
+  cuotasRestantes?: number
+  createdAt?: Date | string
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutCreditInput
+  products?: Prisma.CreditProductUncheckedCreateNestedManyWithoutCreditInput
+  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutCreditInput
+}
+
+export type CreditCreateOrConnectWithoutCreatedByInput = {
+  where: Prisma.CreditWhereUniqueInput
+  create: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput>
+}
+
+export type CreditCreateManyCreatedByInputEnvelope = {
+  data: Prisma.CreditCreateManyCreatedByInput | Prisma.CreditCreateManyCreatedByInput[]
+  skipDuplicates?: boolean
+}
+
 export type CreditUpsertWithWhereUniqueWithoutVendedorInput = {
   where: Prisma.CreditWhereUniqueInput
   update: Prisma.XOR<Prisma.CreditUpdateWithoutVendedorInput, Prisma.CreditUncheckedUpdateWithoutVendedorInput>
@@ -938,6 +1075,7 @@ export type CreditScalarWhereInput = {
   id?: Prisma.IntFilter<"Credit"> | number
   clientId?: Prisma.IntFilter<"Credit"> | number
   vendedorId?: Prisma.IntFilter<"Credit"> | number
+  createdById?: Prisma.IntNullableFilter<"Credit"> | number | null
   fechaInicio?: Prisma.DateTimeFilter<"Credit"> | Date | string
   tipo?: Prisma.StringFilter<"Credit"> | string
   frecuenciaDias?: Prisma.IntFilter<"Credit"> | number
@@ -952,6 +1090,22 @@ export type CreditScalarWhereInput = {
   cuotasPagadas?: Prisma.IntFilter<"Credit"> | number
   cuotasRestantes?: Prisma.IntFilter<"Credit"> | number
   createdAt?: Prisma.DateTimeFilter<"Credit"> | Date | string
+}
+
+export type CreditUpsertWithWhereUniqueWithoutCreatedByInput = {
+  where: Prisma.CreditWhereUniqueInput
+  update: Prisma.XOR<Prisma.CreditUpdateWithoutCreatedByInput, Prisma.CreditUncheckedUpdateWithoutCreatedByInput>
+  create: Prisma.XOR<Prisma.CreditCreateWithoutCreatedByInput, Prisma.CreditUncheckedCreateWithoutCreatedByInput>
+}
+
+export type CreditUpdateWithWhereUniqueWithoutCreatedByInput = {
+  where: Prisma.CreditWhereUniqueInput
+  data: Prisma.XOR<Prisma.CreditUpdateWithoutCreatedByInput, Prisma.CreditUncheckedUpdateWithoutCreatedByInput>
+}
+
+export type CreditUpdateManyWithWhereWithoutCreatedByInput = {
+  where: Prisma.CreditScalarWhereInput
+  data: Prisma.XOR<Prisma.CreditUpdateManyMutationInput, Prisma.CreditUncheckedUpdateManyWithoutCreatedByInput>
 }
 
 export type CreditCreateWithoutClientInput = {
@@ -970,6 +1124,7 @@ export type CreditCreateWithoutClientInput = {
   cuotasRestantes?: number
   createdAt?: Date | string
   vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
   products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
@@ -978,6 +1133,7 @@ export type CreditCreateWithoutClientInput = {
 export type CreditUncheckedCreateWithoutClientInput = {
   id?: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1040,6 +1196,7 @@ export type CreditCreateWithoutPaymentsInput = {
   createdAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutCreditsInput
   vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
 }
@@ -1048,6 +1205,7 @@ export type CreditUncheckedCreateWithoutPaymentsInput = {
   id?: number
   clientId: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1099,6 +1257,7 @@ export type CreditUpdateWithoutPaymentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
   vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
 }
@@ -1107,6 +1266,7 @@ export type CreditUncheckedUpdateWithoutPaymentsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1142,6 +1302,7 @@ export type CreditCreateWithoutProductsInput = {
   createdAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutCreditsInput
   vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutCreditInput
 }
@@ -1150,6 +1311,7 @@ export type CreditUncheckedCreateWithoutProductsInput = {
   id?: number
   clientId: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1201,6 +1363,7 @@ export type CreditUpdateWithoutProductsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
   vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
 }
@@ -1209,6 +1372,7 @@ export type CreditUncheckedUpdateWithoutProductsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1244,6 +1408,7 @@ export type CreditCreateWithoutStockMovementsInput = {
   createdAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutCreditsInput
   vendedor: Prisma.UserCreateNestedOneWithoutCreditsInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedCreditsInput
   payments?: Prisma.PaymentCreateNestedManyWithoutCreditInput
   products?: Prisma.CreditProductCreateNestedManyWithoutCreditInput
 }
@@ -1252,6 +1417,7 @@ export type CreditUncheckedCreateWithoutStockMovementsInput = {
   id?: number
   clientId: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1303,6 +1469,7 @@ export type CreditUpdateWithoutStockMovementsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
   vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
   products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
 }
@@ -1311,6 +1478,7 @@ export type CreditUncheckedUpdateWithoutStockMovementsInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1332,6 +1500,27 @@ export type CreditUncheckedUpdateWithoutStockMovementsInput = {
 export type CreditCreateManyVendedorInput = {
   id?: number
   clientId: number
+  createdById?: number | null
+  fechaInicio: Date | string
+  tipo: string
+  frecuenciaDias: number
+  cantidadCuotas?: number
+  valorCuota: number
+  total: number
+  montoPagado?: number
+  saldo: number
+  estado: string
+  activo?: boolean
+  proximoVencimiento?: Date | string | null
+  cuotasPagadas?: number
+  cuotasRestantes?: number
+  createdAt?: Date | string
+}
+
+export type CreditCreateManyCreatedByInput = {
+  id?: number
+  clientId: number
+  vendedorId: number
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1364,6 +1553,7 @@ export type CreditUpdateWithoutVendedorInput = {
   cuotasRestantes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
   products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
@@ -1372,6 +1562,7 @@ export type CreditUpdateWithoutVendedorInput = {
 export type CreditUncheckedUpdateWithoutVendedorInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1394,6 +1585,72 @@ export type CreditUncheckedUpdateWithoutVendedorInput = {
 export type CreditUncheckedUpdateManyWithoutVendedorInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   clientId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tipo?: Prisma.StringFieldUpdateOperationsInput | string
+  frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
+  cantidadCuotas?: Prisma.IntFieldUpdateOperationsInput | number
+  valorCuota?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  montoPagado?: Prisma.FloatFieldUpdateOperationsInput | number
+  saldo?: Prisma.FloatFieldUpdateOperationsInput | number
+  estado?: Prisma.StringFieldUpdateOperationsInput | string
+  activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  proximoVencimiento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cuotasPagadas?: Prisma.IntFieldUpdateOperationsInput | number
+  cuotasRestantes?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type CreditUpdateWithoutCreatedByInput = {
+  fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tipo?: Prisma.StringFieldUpdateOperationsInput | string
+  frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
+  cantidadCuotas?: Prisma.IntFieldUpdateOperationsInput | number
+  valorCuota?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  montoPagado?: Prisma.FloatFieldUpdateOperationsInput | number
+  saldo?: Prisma.FloatFieldUpdateOperationsInput | number
+  estado?: Prisma.StringFieldUpdateOperationsInput | string
+  activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  proximoVencimiento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cuotasPagadas?: Prisma.IntFieldUpdateOperationsInput | number
+  cuotasRestantes?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  client?: Prisma.ClientUpdateOneRequiredWithoutCreditsNestedInput
+  vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
+  products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
+  stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
+}
+
+export type CreditUncheckedUpdateWithoutCreatedByInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  clientId?: Prisma.IntFieldUpdateOperationsInput | number
+  vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tipo?: Prisma.StringFieldUpdateOperationsInput | string
+  frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
+  cantidadCuotas?: Prisma.IntFieldUpdateOperationsInput | number
+  valorCuota?: Prisma.FloatFieldUpdateOperationsInput | number
+  total?: Prisma.FloatFieldUpdateOperationsInput | number
+  montoPagado?: Prisma.FloatFieldUpdateOperationsInput | number
+  saldo?: Prisma.FloatFieldUpdateOperationsInput | number
+  estado?: Prisma.StringFieldUpdateOperationsInput | string
+  activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  proximoVencimiento?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cuotasPagadas?: Prisma.IntFieldUpdateOperationsInput | number
+  cuotasRestantes?: Prisma.IntFieldUpdateOperationsInput | number
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutCreditNestedInput
+  products?: Prisma.CreditProductUncheckedUpdateManyWithoutCreditNestedInput
+  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutCreditNestedInput
+}
+
+export type CreditUncheckedUpdateManyWithoutCreatedByInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  clientId?: Prisma.IntFieldUpdateOperationsInput | number
+  vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1413,6 +1670,7 @@ export type CreditUncheckedUpdateManyWithoutVendedorInput = {
 export type CreditCreateManyClientInput = {
   id?: number
   vendedorId: number
+  createdById?: number | null
   fechaInicio: Date | string
   tipo: string
   frecuenciaDias: number
@@ -1445,6 +1703,7 @@ export type CreditUpdateWithoutClientInput = {
   cuotasRestantes?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   vendedor?: Prisma.UserUpdateOneRequiredWithoutCreditsNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedCreditsNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutCreditNestedInput
   products?: Prisma.CreditProductUpdateManyWithoutCreditNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutCreditNestedInput
@@ -1453,6 +1712,7 @@ export type CreditUpdateWithoutClientInput = {
 export type CreditUncheckedUpdateWithoutClientInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1475,6 +1735,7 @@ export type CreditUncheckedUpdateWithoutClientInput = {
 export type CreditUncheckedUpdateManyWithoutClientInput = {
   id?: Prisma.IntFieldUpdateOperationsInput | number
   vendedorId?: Prisma.IntFieldUpdateOperationsInput | number
+  createdById?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   fechaInicio?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tipo?: Prisma.StringFieldUpdateOperationsInput | string
   frecuenciaDias?: Prisma.IntFieldUpdateOperationsInput | number
@@ -1544,6 +1805,7 @@ export type CreditSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   id?: boolean
   clientId?: boolean
   vendedorId?: boolean
+  createdById?: boolean
   fechaInicio?: boolean
   tipo?: boolean
   frecuenciaDias?: boolean
@@ -1560,6 +1822,7 @@ export type CreditSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   createdAt?: boolean
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   vendedor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Credit$createdByArgs<ExtArgs>
   payments?: boolean | Prisma.Credit$paymentsArgs<ExtArgs>
   products?: boolean | Prisma.Credit$productsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.Credit$stockMovementsArgs<ExtArgs>
@@ -1572,6 +1835,7 @@ export type CreditSelectScalar = {
   id?: boolean
   clientId?: boolean
   vendedorId?: boolean
+  createdById?: boolean
   fechaInicio?: boolean
   tipo?: boolean
   frecuenciaDias?: boolean
@@ -1588,10 +1852,11 @@ export type CreditSelectScalar = {
   createdAt?: boolean
 }
 
-export type CreditOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "vendedorId" | "fechaInicio" | "tipo" | "frecuenciaDias" | "cantidadCuotas" | "valorCuota" | "total" | "montoPagado" | "saldo" | "estado" | "activo" | "proximoVencimiento" | "cuotasPagadas" | "cuotasRestantes" | "createdAt", ExtArgs["result"]["credit"]>
+export type CreditOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "vendedorId" | "createdById" | "fechaInicio" | "tipo" | "frecuenciaDias" | "cantidadCuotas" | "valorCuota" | "total" | "montoPagado" | "saldo" | "estado" | "activo" | "proximoVencimiento" | "cuotasPagadas" | "cuotasRestantes" | "createdAt", ExtArgs["result"]["credit"]>
 export type CreditInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   vendedor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Credit$createdByArgs<ExtArgs>
   payments?: boolean | Prisma.Credit$paymentsArgs<ExtArgs>
   products?: boolean | Prisma.Credit$productsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.Credit$stockMovementsArgs<ExtArgs>
@@ -1603,6 +1868,7 @@ export type $CreditPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
   objects: {
     client: Prisma.$ClientPayload<ExtArgs>
     vendedor: Prisma.$UserPayload<ExtArgs>
+    createdBy: Prisma.$UserPayload<ExtArgs> | null
     payments: Prisma.$PaymentPayload<ExtArgs>[]
     products: Prisma.$CreditProductPayload<ExtArgs>[]
     stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
@@ -1611,6 +1877,7 @@ export type $CreditPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     id: number
     clientId: number
     vendedorId: number
+    createdById: number | null
     fechaInicio: Date
     tipo: string
     frecuenciaDias: number
@@ -1967,6 +2234,7 @@ export interface Prisma__CreditClient<T, Null = never, ExtArgs extends runtime.T
   readonly [Symbol.toStringTag]: "PrismaPromise"
   client<T extends Prisma.ClientDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientDefaultArgs<ExtArgs>>): Prisma.Prisma__ClientClient<runtime.Types.Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   vendedor<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  createdBy<T extends Prisma.Credit$createdByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credit$createdByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   payments<T extends Prisma.Credit$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credit$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   products<T extends Prisma.Credit$productsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credit$productsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   stockMovements<T extends Prisma.Credit$stockMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Credit$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2002,6 +2270,7 @@ export interface CreditFieldRefs {
   readonly id: Prisma.FieldRef<"Credit", 'Int'>
   readonly clientId: Prisma.FieldRef<"Credit", 'Int'>
   readonly vendedorId: Prisma.FieldRef<"Credit", 'Int'>
+  readonly createdById: Prisma.FieldRef<"Credit", 'Int'>
   readonly fechaInicio: Prisma.FieldRef<"Credit", 'DateTime'>
   readonly tipo: Prisma.FieldRef<"Credit", 'String'>
   readonly frecuenciaDias: Prisma.FieldRef<"Credit", 'Int'>
@@ -2361,6 +2630,25 @@ export type CreditDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Limit how many Credits to delete.
    */
   limit?: number
+}
+
+/**
+ * Credit.createdBy
+ */
+export type Credit$createdByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
 }
 
 /**

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import ProductForm from "@/components/ProductForm";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import LatePaymentAlertsButton from "@/components/LatePaymentAlertsButton";
+import { getLatePaymentAlerts } from "@/lib/late-payment-alerts";
 
 export default async function NuevoProductoPage() {
   try {

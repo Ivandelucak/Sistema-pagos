@@ -1,3 +1,4 @@
+//src/app/page.tsx
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,8 @@ import { calculateCreditTracking } from "@/lib/credit-calculations";
 import HomeSearchFilter from "@/components/HomeSearchFilter";
 import PendingBalancesButton from "@/components/PendingBalancesButton";
 import { canViewPendingBalances } from "@/lib/balance-permissions";
+import LatePaymentAlertsButton from "@/components/LatePaymentAlertsButton";
+import { getLatePaymentAlerts } from "@/lib/late-payment-alerts";
 
 type HomeSort = "az" | "za" | "dueAsc" | "dueDesc";
 
@@ -30,12 +33,6 @@ function matchesSearch({
   if (!query) return true;
 
   return fields.some((field) => normalizeText(field ?? "").includes(query));
-}
-
-function formatMoney(value: number) {
-  return `$${value.toLocaleString("es-AR", {
-    maximumFractionDigits: 0,
-  })}`;
 }
 
 export default async function Home({
@@ -80,57 +77,38 @@ export default async function Home({
     },
   });
 
+  const alertCreditsBase = await prisma.credit.findMany({
+    where: {
+      activo: true,
+      saldo: {
+        gt: 0,
+      },
+    },
+    include: {
+      client: {
+        select: {
+          nombre: true,
+        },
+      },
+      vendedor: {
+        select: {
+          id: true,
+          nombre: true,
+        },
+      },
+    },
+  });
+
+  const latePaymentAlerts = getLatePaymentAlerts(alertCreditsBase).map(
+    (account) => ({
+      ...account,
+      nextDueDate: account.nextDueDate.toISOString(),
+    }),
+  );
+
   const vendedorSeleccionado = Number.isInteger(vendedorId)
     ? (vendedores.find((vendedor) => vendedor.id === vendedorId) ?? null)
     : null;
-
-  const saldoWhere = {
-    activo: true,
-    saldo: {
-      gt: 0,
-    },
-    ...(Number.isInteger(vendedorId) ? { vendedorId } : {}),
-  };
-
-  const [
-    saldoPendienteAggregate,
-    clientesConSaldoPendiente,
-    saldosAgrupadosPorVendedor,
-  ] = await Promise.all([
-    prisma.credit.aggregate({
-      where: saldoWhere,
-      _sum: {
-        saldo: true,
-      },
-      _count: {
-        id: true,
-      },
-    }),
-
-    prisma.credit.findMany({
-      where: saldoWhere,
-      select: {
-        clientId: true,
-      },
-      distinct: ["clientId"],
-    }),
-
-    prisma.credit.groupBy({
-      by: ["vendedorId"],
-      where: {
-        activo: true,
-        saldo: {
-          gt: 0,
-        },
-      },
-      _sum: {
-        saldo: true,
-      },
-      _count: {
-        id: true,
-      },
-    }),
-  ]);
 
   let saldoPendienteTotal = 0;
   let clientesConSaldoPendienteCount = 0;
@@ -213,18 +191,6 @@ export default async function Home({
       })
       .filter((vendedor) => vendedor.saldo > 0 || vendedor.cuentas > 0)
       .sort((a, b) => b.saldo - a.saldo);
-  }
-
-  function buildVendedorHref(nextVendedorId?: number) {
-    const params = new URLSearchParams();
-
-    if (search) params.set("q", search);
-    if (sort !== "az") params.set("order", sort);
-    if (nextVendedorId) params.set("vendedorId", String(nextVendedorId));
-
-    const query = params.toString();
-
-    return query ? `/?${query}` : "/";
   }
 
   const creditosBase = await prisma.credit.findMany({
@@ -321,6 +287,15 @@ export default async function Home({
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
+            <LatePaymentAlertsButton
+              accounts={latePaymentAlerts}
+              sellers={vendedores.map((vendedor) => ({
+                id: vendedor.id,
+                nombre: vendedor.nombre,
+              }))}
+              showSellerFilter
+            />
+
             {canSeePendingBalances && (
               <PendingBalancesButton
                 saldoPendienteTotal={saldoPendienteTotal}
@@ -483,29 +458,6 @@ function SummaryCard({
       <p
         className={`mt-2 text-2xl font-bold ${
           danger ? "text-red-600" : "text-slate-950"
-        }`}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-function BalanceSummaryCard({
-  title,
-  value,
-  highlight,
-}: {
-  title: string;
-  value: number | string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
-      <p className="text-sm font-medium text-slate-500">{title}</p>
-
-      <p
-        className={`mt-2 text-2xl font-bold ${
-          highlight ? "text-red-600" : "text-slate-950"
         }`}
       >
         {value}

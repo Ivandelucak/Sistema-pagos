@@ -1010,6 +1010,7 @@ export const CreditScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
   vendedorId: 'vendedorId',
+  createdById: 'createdById',
   fechaInicio: 'fechaInicio',
   tipo: 'tipo',
   frecuenciaDias: 'frecuenciaDias',

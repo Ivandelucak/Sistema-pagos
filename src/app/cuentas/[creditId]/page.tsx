@@ -37,6 +37,13 @@ export default async function CuentaPage({
         },
       },
       vendedor: true,
+      createdBy: {
+        select: {
+          id: true,
+          nombre: true,
+          email: true,
+        },
+      },
       payments: {
         orderBy: {
           fechaPago: "desc",
@@ -341,6 +348,10 @@ export default async function CuentaPage({
             <Info label="Cliente" value={credito.client.nombre} />
             <Info label="Vendedor" value={credito.vendedor.nombre} />
             <Info label="Tipo" value={credito.tipo} />
+            <Info
+              label="Alta de cuenta"
+              value={credito.createdBy?.nombre ?? "Sin registro"}
+            />
 
             <Info
               label="Fecha inicial"

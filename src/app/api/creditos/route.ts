@@ -168,6 +168,7 @@ export async function POST(req: Request) {
         data: {
           clientId,
           vendedorId,
+          createdById: user.id,
           tipo,
           fechaInicio,
           frecuenciaDias,

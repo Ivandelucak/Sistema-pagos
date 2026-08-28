@@ -234,6 +234,7 @@ export type UserWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   clients?: Prisma.ClientListRelationFilter
   credits?: Prisma.CreditListRelationFilter
+  createdCredits?: Prisma.CreditListRelationFilter
   payments?: Prisma.PaymentListRelationFilter
   stockMovements?: Prisma.StockMovementListRelationFilter
 }
@@ -248,6 +249,7 @@ export type UserOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   clients?: Prisma.ClientOrderByRelationAggregateInput
   credits?: Prisma.CreditOrderByRelationAggregateInput
+  createdCredits?: Prisma.CreditOrderByRelationAggregateInput
   payments?: Prisma.PaymentOrderByRelationAggregateInput
   stockMovements?: Prisma.StockMovementOrderByRelationAggregateInput
   _relevance?: Prisma.UserOrderByRelevanceInput
@@ -266,6 +268,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   clients?: Prisma.ClientListRelationFilter
   credits?: Prisma.CreditListRelationFilter
+  createdCredits?: Prisma.CreditListRelationFilter
   payments?: Prisma.PaymentListRelationFilter
   stockMovements?: Prisma.StockMovementListRelationFilter
 }, "id" | "email">
@@ -307,6 +310,7 @@ export type UserCreateInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutUserInput
 }
@@ -321,6 +325,7 @@ export type UserUncheckedCreateInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditUncheckedCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditUncheckedCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutUserInput
 }
@@ -334,6 +339,7 @@ export type UserUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutUserNestedInput
 }
@@ -348,6 +354,7 @@ export type UserUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUncheckedUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUncheckedUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUncheckedUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -479,12 +486,28 @@ export type UserCreateNestedOneWithoutCreditsInput = {
   connect?: Prisma.UserWhereUniqueInput
 }
 
+export type UserCreateNestedOneWithoutCreatedCreditsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedCreditsInput, Prisma.UserUncheckedCreateWithoutCreatedCreditsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedCreditsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
 export type UserUpdateOneRequiredWithoutCreditsNestedInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutCreditsInput, Prisma.UserUncheckedCreateWithoutCreditsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreditsInput
   upsert?: Prisma.UserUpsertWithoutCreditsInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreditsInput, Prisma.UserUpdateWithoutCreditsInput>, Prisma.UserUncheckedUpdateWithoutCreditsInput>
+}
+
+export type UserUpdateOneWithoutCreatedCreditsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutCreatedCreditsInput, Prisma.UserUncheckedCreateWithoutCreatedCreditsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutCreatedCreditsInput
+  upsert?: Prisma.UserUpsertWithoutCreatedCreditsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutCreatedCreditsInput, Prisma.UserUpdateWithoutCreatedCreditsInput>, Prisma.UserUncheckedUpdateWithoutCreatedCreditsInput>
 }
 
 export type UserCreateNestedOneWithoutPaymentsInput = {
@@ -525,6 +548,7 @@ export type UserCreateWithoutClientsInput = {
   activo?: boolean
   createdAt?: Date | string
   credits?: Prisma.CreditCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutUserInput
 }
@@ -538,6 +562,7 @@ export type UserUncheckedCreateWithoutClientsInput = {
   activo?: boolean
   createdAt?: Date | string
   credits?: Prisma.CreditUncheckedCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditUncheckedCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutUserInput
 }
@@ -566,6 +591,7 @@ export type UserUpdateWithoutClientsInput = {
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   credits?: Prisma.CreditUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutUserNestedInput
 }
@@ -579,6 +605,7 @@ export type UserUncheckedUpdateWithoutClientsInput = {
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   credits?: Prisma.CreditUncheckedUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUncheckedUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -591,6 +618,7 @@ export type UserCreateWithoutCreditsInput = {
   activo?: boolean
   createdAt?: Date | string
   clients?: Prisma.ClientCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutUserInput
 }
@@ -604,6 +632,7 @@ export type UserUncheckedCreateWithoutCreditsInput = {
   activo?: boolean
   createdAt?: Date | string
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditUncheckedCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutUserInput
 }
@@ -611,6 +640,38 @@ export type UserUncheckedCreateWithoutCreditsInput = {
 export type UserCreateOrConnectWithoutCreditsInput = {
   where: Prisma.UserWhereUniqueInput
   create: Prisma.XOR<Prisma.UserCreateWithoutCreditsInput, Prisma.UserUncheckedCreateWithoutCreditsInput>
+}
+
+export type UserCreateWithoutCreatedCreditsInput = {
+  nombre: string
+  email: string
+  password: string
+  rol: $Enums.Role
+  activo?: boolean
+  createdAt?: Date | string
+  clients?: Prisma.ClientCreateNestedManyWithoutVendedorInput
+  credits?: Prisma.CreditCreateNestedManyWithoutVendedorInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  stockMovements?: Prisma.StockMovementCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutCreatedCreditsInput = {
+  id?: number
+  nombre: string
+  email: string
+  password: string
+  rol: $Enums.Role
+  activo?: boolean
+  createdAt?: Date | string
+  clients?: Prisma.ClientUncheckedCreateNestedManyWithoutVendedorInput
+  credits?: Prisma.CreditUncheckedCreateNestedManyWithoutVendedorInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutCreatedCreditsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedCreditsInput, Prisma.UserUncheckedCreateWithoutCreatedCreditsInput>
 }
 
 export type UserUpsertWithoutCreditsInput = {
@@ -632,6 +693,7 @@ export type UserUpdateWithoutCreditsInput = {
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutUserNestedInput
 }
@@ -645,6 +707,45 @@ export type UserUncheckedUpdateWithoutCreditsInput = {
   activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUncheckedUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUncheckedUpdateManyWithoutCreatedByNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserUpsertWithoutCreatedCreditsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutCreatedCreditsInput, Prisma.UserUncheckedUpdateWithoutCreatedCreditsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutCreatedCreditsInput, Prisma.UserUncheckedCreateWithoutCreatedCreditsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutCreatedCreditsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutCreatedCreditsInput, Prisma.UserUncheckedUpdateWithoutCreatedCreditsInput>
+}
+
+export type UserUpdateWithoutCreatedCreditsInput = {
+  nombre?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  rol?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clients?: Prisma.ClientUpdateManyWithoutVendedorNestedInput
+  credits?: Prisma.CreditUpdateManyWithoutVendedorNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  stockMovements?: Prisma.StockMovementUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutCreatedCreditsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  nombre?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  rol?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  activo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  clients?: Prisma.ClientUncheckedUpdateManyWithoutVendedorNestedInput
+  credits?: Prisma.CreditUncheckedUpdateManyWithoutVendedorNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -658,6 +759,7 @@ export type UserCreateWithoutPaymentsInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditCreateNestedManyWithoutCreatedByInput
   stockMovements?: Prisma.StockMovementCreateNestedManyWithoutUserInput
 }
 
@@ -671,6 +773,7 @@ export type UserUncheckedCreateWithoutPaymentsInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditUncheckedCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditUncheckedCreateNestedManyWithoutCreatedByInput
   stockMovements?: Prisma.StockMovementUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -699,6 +802,7 @@ export type UserUpdateWithoutPaymentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUpdateManyWithoutCreatedByNestedInput
   stockMovements?: Prisma.StockMovementUpdateManyWithoutUserNestedInput
 }
 
@@ -712,6 +816,7 @@ export type UserUncheckedUpdateWithoutPaymentsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUncheckedUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUncheckedUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUncheckedUpdateManyWithoutCreatedByNestedInput
   stockMovements?: Prisma.StockMovementUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -724,6 +829,7 @@ export type UserCreateWithoutStockMovementsInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
 }
 
@@ -737,6 +843,7 @@ export type UserUncheckedCreateWithoutStockMovementsInput = {
   createdAt?: Date | string
   clients?: Prisma.ClientUncheckedCreateNestedManyWithoutVendedorInput
   credits?: Prisma.CreditUncheckedCreateNestedManyWithoutVendedorInput
+  createdCredits?: Prisma.CreditUncheckedCreateNestedManyWithoutCreatedByInput
   payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -765,6 +872,7 @@ export type UserUpdateWithoutStockMovementsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
 }
 
@@ -778,6 +886,7 @@ export type UserUncheckedUpdateWithoutStockMovementsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   clients?: Prisma.ClientUncheckedUpdateManyWithoutVendedorNestedInput
   credits?: Prisma.CreditUncheckedUpdateManyWithoutVendedorNestedInput
+  createdCredits?: Prisma.CreditUncheckedUpdateManyWithoutCreatedByNestedInput
   payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -789,6 +898,7 @@ export type UserUncheckedUpdateWithoutStockMovementsInput = {
 export type UserCountOutputType = {
   clients: number
   credits: number
+  createdCredits: number
   payments: number
   stockMovements: number
 }
@@ -796,6 +906,7 @@ export type UserCountOutputType = {
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   clients?: boolean | UserCountOutputTypeCountClientsArgs
   credits?: boolean | UserCountOutputTypeCountCreditsArgs
+  createdCredits?: boolean | UserCountOutputTypeCountCreatedCreditsArgs
   payments?: boolean | UserCountOutputTypeCountPaymentsArgs
   stockMovements?: boolean | UserCountOutputTypeCountStockMovementsArgs
 }
@@ -827,6 +938,13 @@ export type UserCountOutputTypeCountCreditsArgs<ExtArgs extends runtime.Types.Ex
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountCreatedCreditsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CreditWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.PaymentWhereInput
 }
@@ -849,6 +967,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   createdAt?: boolean
   clients?: boolean | Prisma.User$clientsArgs<ExtArgs>
   credits?: boolean | Prisma.User$creditsArgs<ExtArgs>
+  createdCredits?: boolean | Prisma.User$createdCreditsArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.User$stockMovementsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -870,6 +989,7 @@ export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   clients?: boolean | Prisma.User$clientsArgs<ExtArgs>
   credits?: boolean | Prisma.User$creditsArgs<ExtArgs>
+  createdCredits?: boolean | Prisma.User$createdCreditsArgs<ExtArgs>
   payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
   stockMovements?: boolean | Prisma.User$stockMovementsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -880,6 +1000,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     clients: Prisma.$ClientPayload<ExtArgs>[]
     credits: Prisma.$CreditPayload<ExtArgs>[]
+    createdCredits: Prisma.$CreditPayload<ExtArgs>[]
     payments: Prisma.$PaymentPayload<ExtArgs>[]
     stockMovements: Prisma.$StockMovementPayload<ExtArgs>[]
   }
@@ -1233,6 +1354,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   clients<T extends Prisma.User$clientsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$clientsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   credits<T extends Prisma.User$creditsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$creditsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  createdCredits<T extends Prisma.User$createdCreditsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$createdCreditsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CreditPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payments<T extends Prisma.User$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   stockMovements<T extends Prisma.User$stockMovementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$stockMovementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockMovementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1646,6 +1768,30 @@ export type User$clientsArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
  * User.credits
  */
 export type User$creditsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Credit
+   */
+  select?: Prisma.CreditSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Credit
+   */
+  omit?: Prisma.CreditOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CreditInclude<ExtArgs> | null
+  where?: Prisma.CreditWhereInput
+  orderBy?: Prisma.CreditOrderByWithRelationInput | Prisma.CreditOrderByWithRelationInput[]
+  cursor?: Prisma.CreditWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CreditScalarFieldEnum | Prisma.CreditScalarFieldEnum[]
+}
+
+/**
+ * User.createdCredits
+ */
+export type User$createdCreditsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
    * Select specific fields to fetch from the Credit
    */

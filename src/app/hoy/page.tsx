@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/auth";
 import { getCreditsDueToday, getOverdueCredits } from "@/lib/credits";
 import { calculateCreditTracking } from "@/lib/credit-calculations";
 import ClientSearchInput from "@/components/ClientSearchInput";
+import LatePaymentAlertsButton from "@/components/LatePaymentAlertsButton";
+import { getLatePaymentAlerts } from "@/lib/late-payment-alerts";
 
 type CreditItem = Awaited<ReturnType<typeof getOverdueCredits>>[number];
 
@@ -80,6 +82,44 @@ export default async function HoyPage({
         null)
       : null;
 
+  const alertCreditsBase = await prisma.credit.findMany({
+    where: {
+      activo: true,
+      saldo: {
+        gt: 0,
+      },
+      ...(user.rol === "VENDEDOR"
+        ? {
+            vendedorId: user.id,
+          }
+        : Number.isInteger(vendedorIdFiltro)
+          ? {
+              vendedorId: vendedorIdFiltro,
+            }
+          : {}),
+    },
+    include: {
+      client: {
+        select: {
+          nombre: true,
+        },
+      },
+      vendedor: {
+        select: {
+          id: true,
+          nombre: true,
+        },
+      },
+    },
+  });
+
+  const latePaymentAlerts = getLatePaymentAlerts(alertCreditsBase).map(
+    (account) => ({
+      ...account,
+      nextDueDate: account.nextDueDate.toISOString(),
+    }),
+  );
+
   const vencenHoyBase = await getCreditsDueToday(vendedorIdFiltro);
   const vencidosBase = await getOverdueCredits(vendedorIdFiltro);
 
@@ -97,18 +137,24 @@ export default async function HoyPage({
       <section className="mx-auto max-w-3xl space-y-6">
         <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-col gap-3">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-                Cobros del día
-              </h1>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
+                  Cobros del día
+                </h1>
 
-              <p className="mt-2 text-slate-600">
-                Vista rápida para consultar clientes pendientes y vencidos.
-              </p>
+                <p className="mt-2 text-slate-600">
+                  Vista rápida para consultar clientes pendientes y vencidos.
+                </p>
 
-              <p className="mt-1 text-sm text-slate-500">
-                {user.nombre} · {user.rol}
-              </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {user.nombre} · {user.rol}
+                </p>
+              </div>
+
+              {user.rol === "VENDEDOR" && (
+                <LatePaymentAlertsButton accounts={latePaymentAlerts} compact />
+              )}
             </div>
 
             {user.rol === "VENDEDOR" && (

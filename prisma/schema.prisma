@@ -16,7 +16,8 @@ model User {
   activo   Boolean @default(true)
 
   clients        Client[]
-  credits        Credit[]
+  credits        Credit[]        @relation("CreditSeller")
+  createdCredits Credit[]        @relation("CreditCreator")
   payments       Payment[]
   stockMovements StockMovement[]
 
@@ -45,9 +46,10 @@ model Client {
 }
 
 model Credit {
-  id         Int @id @default(autoincrement())
-  clientId   Int
-  vendedorId Int
+  id          Int  @id @default(autoincrement())
+  clientId    Int
+  vendedorId  Int
+  createdById Int?
 
   fechaInicio    DateTime
   tipo           String
@@ -66,8 +68,9 @@ model Credit {
   cuotasPagadas      Int       @default(0)
   cuotasRestantes    Int       @default(0)
 
-  client   Client @relation(fields: [clientId], references: [id])
-  vendedor User   @relation(fields: [vendedorId], references: [id])
+  client    Client @relation(fields: [clientId], references: [id])
+  vendedor  User   @relation("CreditSeller", fields: [vendedorId], references: [id])
+  createdBy User?  @relation("CreditCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   payments       Payment[]
   products       CreditProduct[]
